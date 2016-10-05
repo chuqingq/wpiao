@@ -21,6 +21,26 @@ desired_caps["resetKeyboard"] = "True"
 driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
 
 #-------------------------------------------------------------------------------
+# 登录微信账号
+el = driver.find_element_by_android_uiautomator('text("登录")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("你的手机号码")')
+el.send_keys(u'17092560668')
+
+el = driver.find_element_by_android_uiautomator('new UiSelector().resourceId("com.tencent.mm:id/fo")')
+# el = driver.find_element_by_android_uiautomator('text("填写密码")')
+el.send_keys(u'580608.Chu4')
+
+el = driver.find_element_by_android_uiautomator('text("登录")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("是")')
+el.click()
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 # 获取元素并点击的方式。通过别的微信把投票的公众号发过来。因为webview搞不定
 el = driver.find_element_by_android_uiautomator('text("饮湖后雨")')
 el.click()
