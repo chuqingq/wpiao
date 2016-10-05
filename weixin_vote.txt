@@ -35,10 +35,41 @@ el.send_keys(u'580608.Chu4')
 el = driver.find_element_by_android_uiautomator('text("登录")')
 el.click()
 
+# TODO 好像也不是每次都需要
 el = driver.find_element_by_android_uiautomator('text("是")')
 el.click()
 
 #-------------------------------------------------------------------------------
+# 选择右上角加号
+# driver.tap([(800, 140)])
+el = driver.find_element_by_accessibility_id('搜索')
+el.click()
+
+el = driver.find_element_by_class_name('android.widget.EditText')
+# el.send_keys(u'六安楼市')
+el.send_keys(u'海南日报')
+
+# 点击“搜一搜  xxxx”
+driver.tap([(500, 300)])
+
+# 点击第一个搜索结果
+driver.tap([(500, 500)])
+
+# 滚动到最下方
+driver.swipe(start_x=1,start_y=1600, end_x=1, end_y=100)
+
+# 点击关注
+el = driver.find_element_by_android_uiautomator('text("关注")')
+el.click()
+
+el = driver.find_element_by_accessibility_id('消息')
+el.click()
+
+el = driver.find_element_by_class_name('android.widget.EditText')
+el.send_keys(u'1018')
+
+el = driver.find_element_by_android_uiautomator('text("发送")')
+el.click()
 
 #-------------------------------------------------------------------------------
 # 获取元素并点击的方式。通过别的微信把投票的公众号发过来。因为webview搞不定
@@ -83,17 +114,18 @@ el.click()
 el = driver.find_element_by_android_uiautomator('text("公众号")')
 el.click()
 
+#-------------------------------------------------------------------------------
 # 选择右上角加号
-	el = driver.find_element_by_accessibility_id('搜索')
-	el.click()
+el = driver.find_element_by_accessibility_id('搜索')
+el.click()
 
-	el = driver.find_element_by_class_name('android.widget.EditText')
-	el.send_keys(u'六安楼市')
+el = driver.find_element_by_class_name('android.widget.EditText')
+el.send_keys(u'六安楼市')
 
-	el = driver.find_element_by_android_uiautomator('text("搜一搜  六安楼市")')
-	el.click()
+el = driver.find_element_by_android_uiautomator('text("搜一搜  六安楼市")')
+el.click()
 
-	## 点击500、500。如下
+## 点击500、500。如下
 #-------------------------------------------------------------------------------
 # 点击某个位置（应该可以搞定webview）
 from appium.webdriver.common.touch_action import TouchAction
