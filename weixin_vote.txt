@@ -16,7 +16,11 @@ desired_caps['appActivity'] = 'com.tencent.mm.ui.LauncherUI'
 
 # 支持中文
 desired_caps["unicodeKeyboard"] = "True"  
-desired_caps["resetKeyboard"] = "True"  
+desired_caps["resetKeyboard"] = "True"
+
+# 超时时间长一点
+desired_caps['newCommandTimeout'] = 3600
+desired_caps['noReset'] = "True"
 
 driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
 
@@ -90,6 +94,13 @@ el.send_keys(u'1018')
 
 el = driver.find_element_by_android_uiautomator('text("发送")')
 el.click()
+
+#------------------------------------------------------------------
+# 获取元素的内容
+
+els = driver.find_elements_by_android_uiautomator('new UiSelector().resourceId("com.tencent.mm:id/e9")')
+# 海口周三 10月05日 (实时：27℃)多云微风29 ~ 24℃
+els[1].get_attribute('text')
 
 #------------------------------------------------------------------
 
@@ -182,4 +193,7 @@ driver.quit()
 参考资料：
 1、python-client：https://github.com/appium/python-client
 2、appium的sample-code：https://github.com/appium/sample-code/tree/master/sample-code/examples/python
+
+#---------------------------------------------------------------------
+TODO
 
