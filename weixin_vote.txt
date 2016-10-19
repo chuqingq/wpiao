@@ -15,23 +15,45 @@ from appium import webdriver
 desired_caps = {}
 desired_caps['platformName'] = 'Android'
 desired_caps['platformVersion'] = '4.4.4'
-desired_caps['deviceName'] = '071efe2c00e37e37'
+#desired_caps['deviceName'] = '071efe2c00e37e37'
+desired_caps['deviceName'] = '200ac4ae'
 # 不指定app
 # desired_caps['app'] = '/Users/chuqq/work/sample-code/sample-code/apps/weixin.apk'
 desired_caps['appPackage'] = 'com.tencent.mm'
 desired_caps['appActivity'] = 'com.tencent.mm.ui.LauncherUI'
 
 # 支持中文
-desired_caps["unicodeKeyboard"] = "True"  
-desired_caps["resetKeyboard"] = "True"
+desired_caps["unicodeKeyboard"] = True
+desired_caps["resetKeyboard"] = True
 
 # 超时时间长一点
 desired_caps['newCommandTimeout'] = 3600
-desired_caps['noReset'] = "True"
+desired_caps['noReset'] = True
 
 driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
 
 #-------------------------------------------------------------------------------
+
+# 退出前面的微信账号
+el = driver.find_element_by_android_uiautomator('text("我")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("设置")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("退出")')
+el.click()
+
+driver.tap([(300, 600)]) # 退出当前账号
+
+el = driver.find_element_by_android_uiautomator('text("退出")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("更多")')
+el.click()
+
+driver.tap([(300, 560)]) # 切换账号
+
 # 登录微信账号
 el = driver.find_element_by_android_uiautomator('text("登录")')
 el.click()
@@ -61,13 +83,13 @@ el = driver.find_element_by_class_name('android.widget.EditText')
 el.send_keys(u'海南日报')
 
 # 点击“搜一搜  xxxx”
-driver.tap([(500, 300)])
+driver.tap([(300, 200)]) # TODO 要求是没有关注过的
 
 # 点击第一个搜索结果
-driver.tap([(500, 500)])
+driver.tap([(300, 300)])
 
 # 滚动到最下方
-driver.swipe(start_x=1,start_y=1600, end_x=1, end_y=100)
+driver.swipe(start_x=1,start_y=1600, end_x=1, end_y=100) # TODO 不是必须
 
 # 点击关注
 el = driver.find_element_by_android_uiautomator('text("关注")')
