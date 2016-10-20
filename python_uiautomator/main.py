@@ -1,18 +1,25 @@
+# -*- coding: utf-8 -*-  
+import time
 from uiautomator import Device
 
+def log(str):
+    print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
+
+log('connect to device...')
 d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
 
 # 打开微信应用
+log('open weixin app...')
 d.press.home() # 确保只有一个桌面，点击1下home键，回到主界面
-
 d(text=u'微信').click.wait() # 打开微信
 
 # 退出之前的会话（如果左上角有“返回”，则点击）
+log('return back to main activity...')
 while d(description=u'返回').exists:
     d(description=u'返回').click.wait()
 
-
 # 退出前面的微信账号
+log('logout last account...')
 if d(text=u'我').exists:
     d(text=u'我').click.wait() # 点击右下角的“我”
     d(text=u'设置').click.wait() # 点击“设置”
@@ -31,6 +38,7 @@ d(resourceId='com.tencent.mm:id/e9').click.wait() # 点击“切换账号”
 # 在输入账号页面登录
 account = '17092560668'
 password = '580608.Chu4'
+log('login "' + account + '"...')
 
 d(text=u'你的手机号码').set_text(account) # 输入账号 TODO 建议不要用text区分，可能已填入内容
 d(resourceId='com.tencent.mm:id/fo').set_text(password) # 收入密码
@@ -40,6 +48,7 @@ if d(text=u'否').exists:
 
 # 关注并进入公众号
 weixinid = u'la365dichanjiajuwang'
+log('enter weixinid "' + weixinid + '"...')
 
 d(description=u'搜索').click.wait() # 点击右上角的“搜索”
 d(resourceId='com.tencent.mm:id/fo').set_text(weixinid) # 不能输入中文u'六安楼市'，只能输入微信公众号id
@@ -56,6 +65,7 @@ else:
     d(textContains=(u'微信号: '+weixinid)).click.wait()
 
 # 输入内容
+log('vote...')
 if d(description=u'切换到键盘').exists:
     d(description=u'切换到键盘').click.wait() # 切换到键盘 TODO 可能进来就可以输入
 
@@ -63,9 +73,10 @@ if d(description=u'消息').exists:
     d(description=u'消息').click.wait()
 
 d(resourceId='com.tencent.mm:id/a1o').set_text(u'1018') # 输入投票内容
-d(text=u'发送').click.wait() # TODO 点击“发送”
+d(text=u'发送', clickable=True).click.wait() # TODO 点击“发送”
 
 # 截图记录结果
+log('screenshot...')
 d.screenshot(account + '_' + weixinid + '.png')
 
 # 取消关注（暂时不做，可能不是每个都能取消）
