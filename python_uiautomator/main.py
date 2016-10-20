@@ -80,17 +80,4 @@ log('screenshot...')
 d.screenshot(account + '_' + weixinid + '.png')
 
 # 取消关注（暂时不做，可能不是每个都能取消）
-
-
-#-------------------------------------------------------------------------------
-
-def unicode_input(input_str):
-    """
-    输入英文、中文、混合数字等时使用之！使用Utf7Ime输入法输入Unicode字符
-    """
-    # CURR_DIR = os.path.dirname(os.path.realpath(file))
-    # jar_path = os.path.join(CURR_DIR, "Utf7ImeHelper.jar")
-    # unicode_str = os.popen("java -jar " + jar_path + " " + input_str).read()
-    import os
-    unicode_str = os.popen("java -jar jutf7-1.0.0.jar encode " + input_str).read()
-    return unicode_str
+# 退出登录（放在最前面做）
