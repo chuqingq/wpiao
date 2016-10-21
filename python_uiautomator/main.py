@@ -52,26 +52,28 @@ log('enter weixinid "' + weixinid + '"...')
 
 d(description=u'搜索').click.wait() # 点击右上角的“搜索”
 d(resourceId='com.tencent.mm:id/fo').set_text(weixinid) # 不能输入中文u'六安楼市'，只能输入微信公众号id
-if not d(textContains=(u'微信号: '+weixinid)).exists:
+if d(textContains=(u'微信号: '+weixinid)).exists:
+    log('weixinid already exists...')
+    d(textContains=(u'微信号: '+weixinid)).click.wait()
+    if d(description=u'切换到键盘').exists:
+        log('switch to keyboard...')
+        d(description=u'切换到键盘').click.wait() # 切换到键盘 TODO 可能进来就可以输入
+else:
+    log('weixinid not exists...')
     d(textContains=u'搜一搜').click.wait()
     # 点击第一个搜索结果可能无效，需要等到进入公众号后才能关注
     while not d(textContains=u'功能介绍').exists:
         d.click(550, 550) # 点击第一个搜索结果
     # TODO 避免死循环
     while not d(text=u'关注').exists:
+        log('focus not appears...')
         d.swipe(300,1000, 300, 300, 2)
     d(text=u'关注').click.wait() # 点击“关注”
-else:
-    d(textContains=(u'微信号: '+weixinid)).click.wait()
-
-# 输入内容
-log('vote...')
-if d(description=u'切换到键盘').exists:
-    d(description=u'切换到键盘').click.wait() # 切换到键盘 TODO 可能进来就可以输入
-
-if d(description=u'消息').exists:
+    while not d(description=u'消息').exists:
+        log('message not appears...')
     d(description=u'消息').click.wait()
 
+# 输入内容
 d(resourceId='com.tencent.mm:id/a1o').set_text(u'1018') # 输入投票内容
 d(text=u'发送', clickable=True).click.wait() # TODO 点击“发送”
 
