@@ -9,24 +9,29 @@ log('connect to device...')
 d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
 # d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
 
+# 改为adb shell pm clear com.tencent.mm HERE 整个流程从30+秒缩短到25-秒
+import os
+log('pm clear app...')
+os.system('adb shell pm clear com.tencent.mm HERE')
+
 # 打开微信应用
 log('open weixin app...')
 d.press.home() # 确保只有一个桌面，点击1下home键，回到主界面
 d(text=u'微信').click.wait() # 打开微信
 
-# 退出之前的会话（如果左上角有“返回”，则点击）
-log('return back to main activity...')
-while d(description=u'返回').exists:
-    d(description=u'返回').click.wait()
+# # 退出之前的会话（如果左上角有“返回”，则点击）
+# log('return back to main activity...')
+# while d(description=u'返回').exists:
+#     d(description=u'返回').click.wait()
 
-# 退出前面的微信账号
-log('logout last account...')
-if d(text=u'我').exists:
-    d(text=u'我').click.wait() # 点击右下角的“我”
-    d(text=u'设置').click.wait() # 点击“设置”
-    d(text=u'退出').click.wait() # 点击“退出”
-    d(text=u'退出当前帐号').click.wait() # 退出当前账号
-    d(text=u'退出').click.wait() # 确认退出
+# # 退出前面的微信账号
+# log('logout last account...')
+# if d(text=u'我').exists:
+#     d(text=u'我').click.wait() # 点击右下角的“我”
+#     d(text=u'设置').click.wait() # 点击“设置”
+#     d(text=u'退出').click.wait() # 点击“退出”
+#     d(text=u'退出当前帐号').click.wait() # 退出当前账号
+#     d(text=u'退出').click.wait() # 确认退出
 
 # # 如果是第一次，需要点击左下角的“登录”。如果已登录别的账号，也没有影响
 # if d(text=u'登录').exists:
@@ -35,7 +40,7 @@ if d(text=u'我').exists:
 # 如果已有账号，则点击“更多”到输入账号页面；否则，点击登录，才能输入账号
 while not d(text=u'更多').exists and not d(text=u'登录').exists:
     time.sleep(0.1)
-    log('"more" and "login" not exists...')
+    log('wait for "more" or "login" exists...')
 
 if d(text=u'更多').exists:
     log('click "more"...')
@@ -55,7 +60,7 @@ d(text=u'你的手机号码').set_text(account) # 输入账号 TODO 建议不要
 d(resourceId='com.tencent.mm:id/fo').set_text(password) # 收入密码
 d(text=u'登录').click.wait() # 登录
 while not d(description=u'搜索').exists: # TODO 有可能判断的时候还不存在
-    log('"search" not exists...')
+    log('wait for "search" exists...')
     if d(text=u'否').exists:
         d(text=u'否').click.wait() # 不使用通讯录（不是每次都有）
     time.sleep(0.1)
@@ -75,18 +80,18 @@ else:
     d(textContains=u'搜一搜').click.wait()
     # 点击第一个搜索结果可能无效，需要等到进入公众号后才能关注
     while not d(textContains=u'功能介绍').exists:
-        log('"introduce" not exists...')
+        log('wait for "introduce" exists...')
         time.sleep(0.1)
         d.click(550, 550) # 点击第一个搜索结果
     # TODO 避免死循环
     while not d(text=u'关注').exists:
-        log('"focus" not appears...')
+        log('wait for "focus" appears...')
         d.swipe(300,1000, 300, 300, 2)
     d(text=u'关注').click.wait() # 点击“关注”
 
 # 输入内容
 while not d(resourceId='com.tencent.mm:id/a1o').exists:
-    log('"editText" not exists...')
+    log('wait for "editText" exists...')
     if d(description=u'消息').exists:
         log('"message" exists...')
         d(description=u'消息').click.wait()
@@ -96,7 +101,7 @@ while not d(resourceId='com.tencent.mm:id/a1o').exists:
 d(resourceId='com.tencent.mm:id/a1o').set_text(u'1018') # 输入投票内容
 
 while not d(text=u'发送').exists:
-    log('"send" not exists...')
+    log('wait for "send" exists...')
     time.sleep(0.1)
 d(text=u'发送').click.wait() # 点击“发送”
 
