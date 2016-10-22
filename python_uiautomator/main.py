@@ -14,10 +14,14 @@ import os
 log('pm clear app...')
 os.system('adb shell pm clear com.tencent.mm HERE')
 
-# 打开微信应用
-log('open weixin app...')
-d.press.home() # 确保只有一个桌面，点击1下home键，回到主界面
-d(text=u'微信').click.wait() # 打开微信
+# 用adb启动微信
+log('am start app...')
+os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
+
+# # 打开微信应用
+# log('open weixin app...')
+# d.press.home() # 确保只有一个桌面，点击1下home键，回到主界面
+# d(text=u'微信').click.wait() # 打开微信
 
 # # 退出之前的会话（如果左上角有“返回”，则点击）
 # log('return back to main activity...')
@@ -38,7 +42,7 @@ d(text=u'微信').click.wait() # 打开微信
 #     d(text=u'登录').click.wait() # 点击登录
 
 # 如果已有账号，则点击“更多”到输入账号页面；否则，点击登录，才能输入账号
-while not d(text=u'更多').exists and not d(text=u'登录').exists:
+while not d(text=u'登录').exists:
     time.sleep(0.1)
     log('wait for "more" or "login" exists...')
 
