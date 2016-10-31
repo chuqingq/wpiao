@@ -6,8 +6,8 @@ def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
 log('connect to device...')
-d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
-# d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
+# d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
+d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
 
 # 改为adb shell pm clear com.tencent.mm HERE 整个流程从30+秒缩短到25-秒
 import os
