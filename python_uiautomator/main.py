@@ -16,6 +16,9 @@ log('after pressHome...')
 # adb shell ime enable io.appium.android.ime/.UnicodeIME
 # adb shell ime set io.appium.android.ime/.UnicodeIME
 
+# 解锁屏幕（无视密码）
+# adb am start io.appium.unlock/.Unlock
+
 # 下面内容是需要重复执行的
 
 # 改为adb shell pm clear com.tencent.mm HERE 整个流程从30+秒缩短到25-秒
