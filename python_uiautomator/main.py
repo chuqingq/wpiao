@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-  
 import time
+import os
 from uiautomator import Device
 
 def log(str):
@@ -10,19 +11,23 @@ log('connect to device...')
 d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
 
 d.press.home()
-log('after pressHome...')
+log('after pressHome...') # TODO 第一次连USB的时候需要安装apk，所以较慢
 
 # 切换输入法
-# adb shell ime enable io.appium.android.ime/.UnicodeIME
-# adb shell ime set io.appium.android.ime/.UnicodeIME
+log('enable ime...')
+os.system('adb shell ime enable io.appium.android.ime/.UnicodeIME')
+
+log('set ime...')
+os.system('adb shell ime set io.appium.android.ime/.UnicodeIME')
 
 # 解锁屏幕（无视密码）
-# adb am start io.appium.unlock/.Unlock
+log('unlock screen...')
+os.system('adb shell pm clear io.appium.unlock HERE')
+os.system('adb shell am start io.appium.unlock/.Unlock')
 
 # 下面内容是需要重复执行的
 
 # 改为adb shell pm clear com.tencent.mm HERE 整个流程从30+秒缩短到25-秒
-import os
 log('pm clear app...')
 os.system('adb shell pm clear com.tencent.mm HERE')
 
