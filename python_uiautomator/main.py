@@ -9,6 +9,15 @@ log('connect to device...')
 # d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
 d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
 
+d.press.home()
+log('after pressHome...')
+
+# 切换输入法
+# adb shell ime enable io.appium.android.ime/.UnicodeIME
+# adb shell ime set io.appium.android.ime/.UnicodeIME
+
+# 下面内容是需要重复执行的
+
 # 改为adb shell pm clear com.tencent.mm HERE 整个流程从30+秒缩短到25-秒
 import os
 log('pm clear app...')
@@ -46,14 +55,15 @@ while not d(text=u'登录').exists:
     time.sleep(0.1)
     log('wait for "more" or "login" exists...')
 
-if d(text=u'更多').exists:
-    log('click "more"...')
-    d(text=u'更多').click.wait()
-    d(resourceId='com.tencent.mm:id/e9').click.wait() # 点击“切换账号”
+# if d(text=u'更多').exists:
+#     log('click "more"...')
+#     d(text=u'更多').click.wait()
+#     d(resourceId='com.tencent.mm:id/e9').click.wait() # 点击“切换账号”
 
-if d(text=u'登录').exists:
-    log('click "login"...')
-    d(text=u'登录').click.wait()
+# if d(text=u'登录').exists:
+#     log('click "login"...')
+#     d(text=u'登录').click.wait()
+d(text=u'登录').click.wait()
 
 # 在输入账号页面登录
 account = '17092560668'
