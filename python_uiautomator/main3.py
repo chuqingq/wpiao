@@ -13,6 +13,10 @@ d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037
 accounts = {
 }
 
+def inputAccount(account):
+    os.system('adb shell input text ' + account[0:3])
+    os.system('adb shell input text ' + account[3:7])
+    os.system('adb shell input text ' + account[7:])
 
 def login(account, password):
     log('login ' + account + '...')
@@ -33,7 +37,8 @@ def login(account, password):
     d(text=u'登录').click.wait()
     # 在输入账号页面登录
     log('login "' + account + '"...')
-    d(text=u'你的手机号码').set_text(account) # 输入账号 TODO 建议不要用text区分，可能已填入内容
+    d(resourceId='com.tencent.mm:id/bo2').click()
+    inputAccount(account)
     d(resourceId='com.tencent.mm:id/g9').set_text(password) # 收入密码
     d(text=u'登录').click.wait() # 登录
     log('wait for "搜索" exists...')
@@ -49,7 +54,8 @@ def login(account, password):
 # 确保所有的账号都登录了。只提前做一次
 os.system('adb shell pm clear com.tencent.mm HERE')
 for (n, p) in accounts.items():
-    login(n, p)
+    # login(n, p)
+    pass
 
 log('login success...')
 
@@ -57,14 +63,17 @@ def doVote1():
     time.sleep(1)
     while not d(description=u'搜索').exists:
         time.sleep(0.1)
-    d(description=u'搜索').click() # 点击右上角的“搜索”
+    d(description=u'搜索').click.wait() # 点击右上角的“搜索”
     
     # 关注并进入公众号
     weixinid = u'la365dichanjiajuwang'
     log('enter weixinid "' + weixinid + '"...')
 
-    # log('wait for "搜索" exists...')
-    # while not d(text='搜索').exists:
+    log('wait for "搜索" exists...')
+    while not d(text='搜索').exists:
+        if d(description=u'搜索').exists:
+            d(description=u'搜索').click.wait()
+        time.sleep(0.1)
     # d(resourceId='com.tencent.mm:id/g9').set_text(weixinid) # 不能输入中文u'六安楼市'，只能输入微信公众号id
     d(text='搜索').set_text(weixinid)
     time.sleep(0.5) # 可能已关注，但是不能立刻搜索到
