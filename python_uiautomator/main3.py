@@ -8,7 +8,9 @@ def log(str):
 
 log('connect to device...')
 # d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
-d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
+# d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
+d = Device('192.168.56.101:5555', adb_server_host='127.0.0.1', adb_server_port=5037)
+
 
 accounts = {
 }
@@ -27,7 +29,7 @@ def login(account, password):
     log('ln...')
     os.system('adb shell ln -s /data/app-lib/com.tencent.mm-1 /data/data/com.tencent.mm/lib')
     log('chown...')
-    os.system('adb shell chown u0_a126:u0_a126 /data/data/com.tencent.mm')
+    os.system('adb shell chown u0_a60:u0_a60 /data/data/com.tencent.mm')
     log('am start...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
     # 如果已有账号，则点击“更多”到输入账号页面；否则，点击登录，才能输入账号
@@ -60,20 +62,27 @@ for (n, p) in accounts.items():
 log('login success...')
 
 def doVote1():
-    time.sleep(1)
-    while not d(description=u'搜索').exists:
-        time.sleep(0.1)
+    log('enter doVote1...')
+    # 分配权限
+    d(text=u'允许').wait.exists()
+    d(text=u'允许').click()
+    d(text=u'允许').wait.exists()
+    d(text=u'允许').click()
+    d(text=u'允许').wait.exists()
+    d(text=u'允许').click()
+    # 点击搜索框
+    d(description=u'搜索').wait.exists()
     d(description=u'搜索').click.wait() # 点击右上角的“搜索”
-    
     # 关注并进入公众号
     weixinid = u'la365dichanjiajuwang'
     log('enter weixinid "' + weixinid + '"...')
 
     log('wait for "搜索" exists...')
-    while not d(text='搜索').exists:
-        if d(description=u'搜索').exists:
-            d(description=u'搜索').click.wait()
-        time.sleep(0.1)
+    # while not d(text='搜索').exists:
+    #     # if d(description=u'搜索').exists:
+    #     #     d(description=u'搜索').click.wait()
+    #     time.sleep(0.1)
+    d(text='搜索').wait.exists()
     # d(resourceId='com.tencent.mm:id/g9').set_text(weixinid) # 不能输入中文u'六安楼市'，只能输入微信公众号id
     d(text='搜索').set_text(weixinid)
     time.sleep(0.5) # 可能已关注，但是不能立刻搜索到
@@ -113,8 +122,9 @@ def doVote1():
     d(className='android.widget.EditText').set_text(u'1018')
 
     log('wait for "发送" exists...')
-    while not d(text=u'发送').exists:
-        time.sleep(0.1)
+    # while not d(text=u'发送').exists:
+    #     time.sleep(0.1)
+    d(text=u'发送').wait.exists()
     d(text=u'发送').click.wait() # 点击“发送”
 
 def doVote2():
