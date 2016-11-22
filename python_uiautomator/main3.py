@@ -24,8 +24,10 @@ def login(account, password):
     log('login ' + account + '...')
     log('rm...')
     os.system('adb shell rm -rf /data/data/com.tencent.mm')
+    os.system('adb shell rm -rf /mnt/sdcard/tencent')
     log('mkdir...')
     os.system('adb shell mkdir -p /data/data/com.tencent.mm')
+    os.system('adb shell mkdir -p /mnt/sdcard/tencent')
     log('ln...')
     os.system('adb shell ln -s /data/app-lib/com.tencent.mm-1 /data/data/com.tencent.mm/lib')
     log('chown...')
@@ -51,6 +53,7 @@ def login(account, password):
     time.sleep(2)
     os.system('adb shell am force-stop com.tencent.mm HERE')
     os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
+    os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
 
 
 # 确保所有的账号都登录了。只提前做一次
@@ -172,6 +175,7 @@ def vote(account, password):
     # 移动号码的目录到/data/data/com.tencent.mm
     log('restore ' + account + '...')
     os.system('adb shell mv /data/data/com.tencent.mm.'+account+' /data/data/com.tencent.mm')
+    os.system('adb shell mv /mnt/sdcard/tencent.'+account+' /mnt/sdcard/tencent')
     # 用adb启动微信
     log('am start app...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
@@ -182,6 +186,7 @@ def vote(account, password):
     # 停止微信并保存账号状态
     os.system('adb shell am force-stop com.tencent.mm HERE')
     os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
+    os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
 
 os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
 for (n, p) in accounts.items():
