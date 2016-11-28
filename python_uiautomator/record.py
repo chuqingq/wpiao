@@ -1,40 +1,42 @@
-# -*- coding:UTF-8 -*-
+# -*- coding: utf-8 -*-
 import os
 
 from uiautomator import Device
 
-d = Device('0709000500e28864', adb_server_port=55037)
+d = Device('071efe2c00e37e37', adb_server_port=5037)
 
-# 参数
 actions = []
 
 def record():
     while True:
         # input
-        input = raw_input('action:')
+        action = raw_input('input action: ')
+        print 'action: ' + action
         # page down
-        if input == 'd' or input == '':
+        if action == 'd' or action == '':
             d.drag(300, 1000, 300, 300,2)
             actions.append('pagedown')
         # page up
-        elif input == 'u': # page up
+        elif action == 'u': # page up
             d.drag(300, 300, 300, 1000,2)
             actions.append('pageup')
         # click
-        elif input == 'c': # click
-            d.screenshot('1.png')
-            d.dump("1.uix")
+        elif action == 'c': # click
+            d.screenshot(u'1.png')
+            d.dump(u'1.uix')
             print 'start uiautomatorviewer...'
-            os.system('D:\\Android\\sdk\\tools\\uiautomatorviewer.bat 1.xml 1.png')
+            # os.system('D:\\Android\\sdk\\tools\\uiautomatorviewer.bat 1.xml 1.png')
+            os.system('/Users/chuqq/Library/Android/sdk/tools/uiautomatorviewer')
             try:
-                click = raw_input('click x,y=')
+                click = raw_input('click x,y=\n')
                 actions.append(eval(click))
             except SyntaxError:
                 continue
         # end
-        elif input == 'e': # end
+        elif action == 'e': # end
             break
-
+        else:
+            print 'invalid action: ' + action
     print actions
 
 def replay():
