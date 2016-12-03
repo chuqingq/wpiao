@@ -1,4 +1,13 @@
-# -*- coding: utf-8 -*-  
+# -*- coding: utf-8 -*-
+
+"""
+操作步骤：
+* 修改设备串号和adb端口
+* 指定安卓用户，例如u0_a121
+* 指定微信的控件ID
+* 修改要操作的账号
+* 修改需要的动作
+"""
 import time
 import os
 from uiautomator import Device
@@ -7,13 +16,15 @@ def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
 log('connect to device...')
-# d = Device('0710ad7b00f456bb', adb_server_host='127.0.0.1', adb_server_port=55037)
-# d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037)
-d = Device('192.168.56.101:5555', adb_server_host='127.0.0.1', adb_server_port=5037)
-
+# d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037) # nexus 5 home
+d = Device('bbb5fc231f5c3', adb_server_port=5037) # redmi 4a 1
 
 accounts = {
+    # u'17092560668': u'580608.Chu4',
+    # u'13770641012': u'580608.Chu4',
 }
+
+user = 'u0_a121'
 
 def inputAccount(account):
     os.system('adb shell input text ' + account[0:3])
@@ -31,7 +42,7 @@ def login(account, password):
     log('ln...')
     os.system('adb shell ln -s /data/app-lib/com.tencent.mm-1 /data/data/com.tencent.mm/lib')
     log('chown...')
-    os.system('adb shell chown u0_a60:u0_a60 /data/data/com.tencent.mm')
+    os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
     log('am start...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
     # 如果已有账号，则点击“更多”到输入账号页面；否则，点击登录，才能输入账号
@@ -59,22 +70,23 @@ def login(account, password):
 # 确保所有的账号都登录了。只提前做一次
 os.system('adb shell pm clear com.tencent.mm HERE')
 for (n, p) in accounts.items():
-    # login(n, p)
+    login(n, p)
     pass
 
 log('login success...')
 
 def doVote1():
     log('enter doVote1...')
-    # 分配权限
-    d(text=u'允许').wait.exists()
-    d(text=u'允许').click()
-    d(text=u'允许').wait.exists()
-    d(text=u'允许').click()
-    d(text=u'允许').wait.exists()
-    d(text=u'允许').click()
+    # 分配权限。模拟器不用下面的3个允许
+    # d(text=u'允许').wait.exists()
+    # d(text=u'允许').click()
+    # d(text=u'允许').wait.exists()
+    # d(text=u'允许').click()
+    # d(text=u'允许').wait.exists()
+    # d(text=u'允许').click()
     # 点击搜索框
     d(description=u'搜索').wait.exists()
+    time.sleep(1)
     d(description=u'搜索').click.wait() # 点击右上角的“搜索”
     # 关注并进入公众号
     weixinid = u'la365dichanjiajuwang'
@@ -115,6 +127,7 @@ def doVote1():
     # while not d(resourceId='com.tencent.mm:id/a1o').exists:
     log('wait for "editText" exists...')
     while not d(className='android.widget.EditText').exists:
+        log('wait...')
         if d(description=u'消息').exists:
             log('"消息" exists...')
             d(description=u'消息').click.wait()
@@ -170,12 +183,22 @@ def doVote2():
         time.sleep(0.1)
     d(text=u'发送').click.wait() # 点击“发送”
 
-def vote(account, password):
-    log('vote ' + account + '...')
+def restore(account):
+    log('restore '+account)
     # 移动号码的目录到/data/data/com.tencent.mm
-    log('restore ' + account + '...')
+    os.system('adb shell am force-stop com.tencent.mm HERE')
     os.system('adb shell mv /data/data/com.tencent.mm.'+account+' /data/data/com.tencent.mm')
     os.system('adb shell mv /mnt/sdcard/tencent.'+account+' /mnt/sdcard/tencent')
+
+def backup(account):
+    log('backup '+account)
+    os.system('adb shell am force-stop com.tencent.mm HERE')
+    os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
+    os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
+
+def vote(account, password):
+    log('vote ' + account + '...')
+    restore(account)
     # 用adb启动微信
     log('am start app...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
@@ -184,12 +207,11 @@ def vote(account, password):
     # 截图
     d.screenshot(account + '_' + 'weixinid_todo' + '.png')
     # 停止微信并保存账号状态
-    os.system('adb shell am force-stop com.tencent.mm HERE')
-    os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
-    os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
+    backup(account)
 
 os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
 for (n, p) in accounts.items():
-    vote(n, p)
+    # vote(n, p)
+    pass
 
 log('vote success')
