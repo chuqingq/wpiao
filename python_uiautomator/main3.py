@@ -2,11 +2,11 @@
 
 """
 操作步骤：
-* 修改设备串号和adb端口
-* 指定安卓用户，例如u0_a121
-* 指定微信的控件ID
-* 修改要操作的账号
-* 修改需要的动作
+* 修改设备串号和adb端口：bbb5fc231f5c3，5037
+* 指定安卓用户：u0_a121
+* 指定微信的控件ID：你的手机号码，填写密码
+* 修改要操作的账号：17092560668
+* 修改需要的动作：login
 """
 import time
 import os
@@ -17,14 +17,13 @@ def log(str):
 
 log('connect to device...')
 # d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037) # nexus 5 home
-d = Device('bbb5fc231f5c3', adb_server_port=5037) # redmi 4a 1
+# d = Device('bbb5fc231f5c3', adb_server_port=5037) # redmi 4a 1
+d = Device('200ac4ae', adb_server_port=5037) # 三星galaxy E7
 
 accounts = {
-    # u'17092560668': u'580608.Chu4',
-    # u'13770641012': u'580608.Chu4',
 }
 
-user = 'u0_a121'
+user = 'u0_a140'
 
 def inputAccount(account):
     os.system('adb shell input text ' + account[0:3])
@@ -40,7 +39,7 @@ def login(account, password):
     os.system('adb shell mkdir -p /data/data/com.tencent.mm')
     os.system('adb shell mkdir -p /mnt/sdcard/tencent')
     log('ln...')
-    os.system('adb shell ln -s /data/app-lib/com.tencent.mm-1 /data/data/com.tencent.mm/lib')
+    os.system('adb shell ln -s /data/app/com.tencent.mm-1/lib/arm /data/data/com.tencent.mm/lib')
     log('chown...')
     os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
     log('am start...')
@@ -52,9 +51,9 @@ def login(account, password):
     d(text=u'登录').click.wait()
     # 在输入账号页面登录
     log('login "' + account + '"...')
-    d(resourceId='com.tencent.mm:id/bo2').click()
+    d(resourceId='com.tencent.mm:id/bm2').click()
     inputAccount(account)
-    d(resourceId='com.tencent.mm:id/g9').set_text(password) # 收入密码
+    d(resourceId='com.tencent.mm:id/fo').set_text(password) # 收入密码
     d(text=u'登录').click.wait() # 登录
     log('wait for "搜索" exists...')
     while not d(description=u'搜索').exists: # TODO 有可能判断的时候还不存在
@@ -68,7 +67,7 @@ def login(account, password):
 
 
 # 确保所有的账号都登录了。只提前做一次
-os.system('adb shell pm clear com.tencent.mm HERE')
+# os.system('adb shell pm clear com.tencent.mm HERE')
 for (n, p) in accounts.items():
     login(n, p)
     pass
