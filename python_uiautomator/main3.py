@@ -20,12 +20,11 @@ def log(str):
 log('connect to device...')
 # d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037) # nexus 5 home
 # d = Device('bbb5fc231f5c3', adb_server_port=5037) # redmi 4a 1
-d = Device('200ac4ae', adb_server_port=5037) # 三星galaxy E7
-user = 'u0_a140'
+d = Device(data.imei, adb_server_port=5037) # 三星galaxy E7
 
 accounts = data.accounts
 
-def register(account, password):
+def registerOne(account, password):
     log('register ' + account + '...')
     log('rm...')
     os.system('adb shell rm -rf /data/data/com.tencent.mm')
@@ -36,7 +35,7 @@ def register(account, password):
     log('ln...')
     os.system('adb shell ln -s /data/app/com.tencent.mm-1/lib/arm /data/data/com.tencent.mm/lib')
     log('chown...')
-    os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
+    os.system('adb shell chown '+data.user+':'+data.user+' /data/data/com.tencent.mm')
     log('am start...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
     # 点击注册按钮
@@ -51,16 +50,19 @@ def register(account, password):
     d(resourceId='com.tencent.mm:id/fo').set_text(password) # TODO 资源ID可能不是这个
     pass # TODO 后续流程
 
-for (n, p) in accounts.items():
-    resgister(n, p)
-    pass
+def registerAll():
+    for (n, p) in accounts.items():
+        resgisterOne(n, p)
 
+registerAll()
+
+# 输入账号，因为微信会针对11位手机号自动分成3、4、4中间有空格，所以需要一段一段输入
 def inputAccount(account):
     os.system('adb shell input text ' + account[0:3])
     os.system('adb shell input text ' + account[3:7])
     os.system('adb shell input text ' + account[7:])
 
-def login(account, password):
+def loginOne(account, password):
     log('login ' + account + '...')
     log('rm...')
     os.system('adb shell rm -rf /data/data/com.tencent.mm')
@@ -71,7 +73,7 @@ def login(account, password):
     log('ln...')
     os.system('adb shell ln -s /data/app/com.tencent.mm-1/lib/arm /data/data/com.tencent.mm/lib')
     log('chown...')
-    os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
+    os.system('adb shell chown '+data.user+':'+data.user+' /data/data/com.tencent.mm')
     log('am start...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
     # 如果已有账号，则点击“更多”到输入账号页面；否则，点击登录，才能输入账号
@@ -97,12 +99,11 @@ def login(account, password):
 
 
 # 确保所有的账号都登录了。只提前做一次
-# os.system('adb shell pm clear com.tencent.mm HERE')
-for (n, p) in accounts.items():
-    # login(n, p)
-    pass
-
-log('login success...')
+def loginAll():
+    # os.system('adb shell pm clear com.tencent.mm HERE')
+    for (n, p) in accounts.items():
+        loginOne(n, p)
+    log('login success...')
 
 def doVote1():
     log('enter doVote1...')
@@ -238,9 +239,8 @@ def vote(account, password):
     # 停止微信并保存账号状态
     backup(account)
 
-os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
-for (n, p) in accounts.items():
-    # vote(n, p)
-    pass
-
-log('vote success')
+def voteAll():
+    os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
+    for (n, p) in accounts.items():
+        vote(n, p)
+    log('vote success')
