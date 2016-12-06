@@ -12,6 +12,8 @@ import time
 import os
 from uiautomator import Device
 
+import data
+
 def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
@@ -19,11 +21,39 @@ log('connect to device...')
 # d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037) # nexus 5 home
 # d = Device('bbb5fc231f5c3', adb_server_port=5037) # redmi 4a 1
 d = Device('200ac4ae', adb_server_port=5037) # 三星galaxy E7
-
-accounts = {
-}
-
 user = 'u0_a140'
+
+accounts = data.accounts
+
+def register(account, password):
+    log('register ' + account + '...')
+    log('rm...')
+    os.system('adb shell rm -rf /data/data/com.tencent.mm')
+    os.system('adb shell rm -rf /mnt/sdcard/tencent')
+    log('mkdir...')
+    os.system('adb shell mkdir -p /data/data/com.tencent.mm')
+    os.system('adb shell mkdir -p /mnt/sdcard/tencent')
+    log('ln...')
+    os.system('adb shell ln -s /data/app/com.tencent.mm-1/lib/arm /data/data/com.tencent.mm/lib')
+    log('chown...')
+    os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
+    log('am start...')
+    os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
+    # 点击注册按钮
+    d(text=u'注册').wait.exists()
+    d(text=u'注册').click()
+    # 输入昵称
+    d(text=u'例如：陈晨').set_text(account)
+    # 输入手机号
+    d(text=u'你的手机号').click()
+    inputAccount(account)
+    # 输入密码
+    d(resourceId='com.tencent.mm:id/fo').set_text(password) # TODO 资源ID可能不是这个
+    pass # TODO 后续流程
+
+for (n, p) in accounts.items():
+    resgister(n, p)
+    pass
 
 def inputAccount(account):
     os.system('adb shell input text ' + account[0:3])
@@ -69,7 +99,7 @@ def login(account, password):
 # 确保所有的账号都登录了。只提前做一次
 # os.system('adb shell pm clear com.tencent.mm HERE')
 for (n, p) in accounts.items():
-    login(n, p)
+    # login(n, p)
     pass
 
 log('login success...')
