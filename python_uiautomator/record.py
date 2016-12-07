@@ -3,7 +3,7 @@ import os
 
 from uiautomator import Device
 
-d = Device('071efe2c00e37e37', adb_server_port=5037)
+d = Device('200ac4ae', adb_server_port=5037)
 
 actions = []
 
@@ -14,11 +14,11 @@ def record():
         print 'action: ' + action
         # page down
         if action == 'd' or action == '':
-            d.drag(300, 1000, 300, 300,2)
+            d.drag(300, 1260, 300, 160,2)
             actions.append('pagedown')
         # page up
         elif action == 'u': # page up
-            d.drag(300, 300, 300, 1000,2)
+            d.drag(300, 160, 300, 1260,2)
             actions.append('pageup')
         # click
         elif action == 'c': # click
@@ -42,9 +42,9 @@ def record():
 def replay():
     for action in actions:
         if action == 'pagedown':
-            d.drag(300, 1000, 300, 300,2)
+            d.drag(300, 1260, 300, 160,2)
         elif action == 'pageup':
-            d.drag(300, 300, 300, 1000,2)
+            d.drag(300, 160, 300, 1260,2)
         else:
             x, y = action
             d.click(x, y)
