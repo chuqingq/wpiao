@@ -1,24 +1,28 @@
 # -*- coding: utf-8 -*-
 import os
+import time
 
 from uiautomator import Device
 
-d = Device('200ac4ae', adb_server_port=5037)
+def log(str):
+    print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
+
+# d = Device('200ac4ae', adb_server_port=5037)
 
 actions = []
 
-def record():
+def record(d):
     while True:
         # input
         action = raw_input('input action: ')
         print 'action: ' + action
         # page down
         if action == 'd' or action == '':
-            d.drag(300, 1260, 300, 160,2)
+            d.drag(300, 1260, 300, 160)
             actions.append('pagedown')
         # page up
         elif action == 'u': # page up
-            d.drag(300, 160, 300, 1260,2)
+            d.drag(300, 160, 300, 1260)
             actions.append('pageup')
         # click
         elif action == 'c': # click
@@ -39,17 +43,18 @@ def record():
             print 'invalid action: ' + action
     print actions
 
-def replay():
+def replay(d):
+    d.screen.on()
+    log('replay...')
     for action in actions:
         if action == 'pagedown':
-            d.drag(300, 1260, 300, 160,2)
+            d.drag(300, 1260, 300, 160)
+            time.sleep(0.5)
         elif action == 'pageup':
-            d.drag(300, 160, 300, 1260,2)
+            d.drag(300, 160, 300, 1260)
+            time.sleep(0.5)
         else:
             x, y = action
             d.click(x, y)
-    print 'replay end'
+    log('replay end')
 
-
-record()
-replay()
