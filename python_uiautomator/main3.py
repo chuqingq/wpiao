@@ -14,6 +14,7 @@ import os
 from uiautomator import Device
 
 from data import accounts
+import record
 
 def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
@@ -51,6 +52,8 @@ def clearDataAndStart():
 
 def restore(account):
     log('restore '+account)
+    os.system('adb shell rm -rf /data/data/com.tencent.mm')
+    os.system('adb shell rm -rf /mnt/sdcard/tencent')
     # 移动号码的目录到/data/data/com.tencent.mm
     os.system('adb shell am force-stop com.tencent.mm HERE')
     os.system('adb shell mv /data/data/com.tencent.mm.'+account+' /data/data/com.tencent.mm')
@@ -141,6 +144,7 @@ def loginAll():
         login(n, p)
     log('login success...')
 
+# 投票分类1：关注微信号，发送指定的内容即投票
 def doVote1():
     log('enter doVote1...')
     # 分配权限。模拟器不用下面的3个允许
@@ -209,6 +213,7 @@ def doVote1():
     d(text=u'发送').wait.exists()
     d(text=u'发送').click.wait() # 点击“发送”
 
+# 投票分类2：通过会话点击别人发的链接
 def doVote2():
     # 等待群聊出现
     log('wait for "群聊" exists...')
@@ -249,14 +254,36 @@ def doVote2():
         time.sleep(0.1)
     d(text=u'发送').click.wait() # 点击“发送”
 
-def vote(account, password):
+# 投票分类3：自己给自己发链接
+def doVote3():
+    # 发送链接
+    d(text=u'通讯录').click()
+    d(text=u'wangqingmonkey').click()
+    d(text=u'发消息').click()
+    # d(className='android.widget.EditText').set_text('http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg')
+    d(className='android.widget.EditText').click.wait()
+    log('enable ime...')
+    os.system('adb shell ime enable io.appium.android.ime/.UnicodeIME')
+    log('set ime...')
+    os.system('adb shell ime set io.appium.android.ime/.UnicodeIME')
+    url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
+    os.system('adb shell input text "'+url+'"')
+    d(text=u'发送').click.wait()
+    # 打开链接
+    d(text=url).click.wait()
+    # 执行动作
+    time.sleep(2)
+    record.actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown', (300, 926), 'pagedown', 'pagedown', (360, 1258)]
+    record.replay(d)
+
+def vote(account):
     log('vote ' + account + '...')
     restore(account)
     # 用adb启动微信
     log('am start app...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
     # 投票
-    doVote1()
+    doVote3()
     # 截图
     d.screenshot(account + '_' + 'weixinid_todo' + '.png')
     # 停止微信并保存账号状态
@@ -265,5 +292,5 @@ def vote(account, password):
 def voteAll():
     os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
     for (n, p) in accounts.items():
-        vote(n, p)
+        vote(n)
     log('vote success')
