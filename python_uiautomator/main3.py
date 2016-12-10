@@ -11,30 +11,49 @@
 """
 import time
 import os
+import subprocess
+
 from uiautomator import Device
 
 from data import accounts
-import record
 
 def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
-# d = Device('071efe2c00e37e37', adb_server_host='127.0.0.1', adb_server_port=5037) # nexus 5 home
-# d = Device('bbb5fc231f5c3', adb_server_port=5037) # redmi 4a 1
 d = Device('200ac4ae', adb_server_port=5037) # 三星galaxy E7
 user = 'u0_a140' # 手机上微信的操作系统用户
 
+# 投票地址
+url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
+
+# 投票动作
+actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown',(300, 1230), 'pagedown', 'pagedown', 'pagedown', (300, 465)]
+
 ## ---- 内部函数
 
-# 输入账号，因为微信会针对11位手机号自动分成3、4、4中间有空格，所以需要一段一段输入
+# 启动uiautomatorviewer
+def startViewer():
+    subprocess.Popen('/Users/chuqq/Library/Android/sdk/tools/uiautomatorviewer')
+
+# 导出当前界面层级
+def dump():
+    d.dump('1.uix')
+    d.screenshot('1.png')
+
+# 输入账号
 def inputAccount(account):
     os.system('adb shell input text ' + account[0:3])
     os.system('adb shell input text ' + account[3:7])
     os.system('adb shell input text ' + account[7:])
 
+# 启动微信
+def startApp():
+    log('start app...')
+    os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
 
-def clearDataAndStart():
-    log('clearDataAndStart')
+# 创建空数据
+def clearData():
+    log('clear data...')
     os.system('adb shell am force-stop com.tencent.mm HERE')
     # 创建空环境
     log('rm...')
@@ -47,8 +66,6 @@ def clearDataAndStart():
     os.system('adb shell ln -s /data/app/com.tencent.mm-1/lib/arm /data/data/com.tencent.mm/lib')
     log('chown...')
     os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
-    log('am start...')
-    os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
 
 def restore(account):
     log('restore '+account)
@@ -65,10 +82,74 @@ def backup(account):
     os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
     os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
 
+
 ## ---- 业务逻辑
+
+def pagedown():
+    d.swipePoints([(300,1260), (300,160), (301,160)], 10)
+
+def pageup():
+    d.swipePoints([(300,160), (300,1260), (301,1260)], 10)
+
+# 录制
+def record():
+    while True:
+        # input
+        action = raw_input('input action: ')
+        print 'action: ' + action
+        # page down
+        if action == 'd' or action == '':
+            pagedown()
+            actions.append('pagedown')
+        # page up
+        elif action == 'u': # page up
+            pageup()
+            actions.append('pageup')
+        # click
+        elif action == 'c': # click
+            d.screenshot(u'1.png')
+            d.dump(u'1.uix')
+            print 'start uiautomatorviewer...'
+            os.system('/Users/chuqq/Library/Android/sdk/tools/uiautomatorviewer')
+            try:
+                click = raw_input('click x,y=\n')
+                actions.append(eval(click))
+            except SyntaxError:
+                continue
+        # end
+        elif action == 'e': # end
+            break
+        else:
+            print 'invalid action: ' + action
+    print actions
+
+# 回放
+def replay():
+    log('replay...')
+    # 滑到最上面
+    d.swipe(300, 160, 300, 1260, 2)
+    time.sleep(0.5)
+    d.swipe(300, 160, 300, 1260, 2)
+    time.sleep(0.5)
+    d.swipe(300, 160, 300, 1260, 2)
+    time.sleep(0.5)
+    log('back to beginning')
+    # 执行动作
+    for action in actions:
+        if action == 'pagedown':
+            pagedown()
+        elif action == 'pageup':
+            pageup()
+        else:
+            x, y = action
+            d.click(x, y)
+    log('replay end')
+
+
 def register(account, password):
     log('register ' + account + '...')
-    clearDataAndStart()
+    clearData()
+    startApp()
     # 点击注册按钮
     d(text=u'注册').wait.exists()
     d(text=u'注册').click()
@@ -115,7 +196,8 @@ def registerAll():
 
 def login(account, password):
     log('login ' + account + '...')
-    clearDataAndStart()
+    clearData()
+    startApp()
     # 如果已有账号，则点击“更多”到输入账号页面；否则，点击登录，才能输入账号
     log('wait for "登录" exists...')
     while not d(text=u'登录').exists:
@@ -255,35 +337,54 @@ def doVote2():
     d(text=u'发送').click.wait() # 点击“发送”
 
 # 投票分类3：自己给自己发链接
-def doVote3():
+def doVote3(account):
+    log('doVote3...')
+    d.screen.on()
+    log('doVote3 2....')
     # 发送链接
-    d(text=u'通讯录').click()
-    d(text=u'wangqingmonkey').click()
-    d(text=u'发消息').click()
+    d(text=u'通讯录').click.wait()
+    # d(text=u'wangqingmonkey').click()
+    d(text=account).click.wait()
+    d(text=u'发消息').click.wait()
     # d(className='android.widget.EditText').set_text('http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg')
-    d(className='android.widget.EditText').click.wait()
-    log('enable ime...')
-    os.system('adb shell ime enable io.appium.android.ime/.UnicodeIME')
-    log('set ime...')
-    os.system('adb shell ime set io.appium.android.ime/.UnicodeIME')
-    url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
+    d(className='android.widget.EditText').click()
+    # log('enable ime...')
+    # os.system('adb shell ime enable io.appium.android.ime/.UnicodeIME')
+    # log('set ime...')
+    # os.system('adb shell ime set io.appium.android.ime/.UnicodeIME')
     os.system('adb shell input text "'+url+'"')
     d(text=u'发送').click.wait()
     # 打开链接
+    count = d(text=url).count
+    d(text=url)[-1].wait.exists()
     d(text=url).click.wait()
+    log('open webview')
     # 执行动作
-    time.sleep(2)
-    record.actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown', (300, 926), 'pagedown', 'pagedown', (360, 1258)]
-    record.replay(d)
+    time.sleep(5) # 等待页面加载完成。 TODO 可能不在最上方
+    # 设置actions
+    replay()
+
+# 投票分类4：用已有的链接投票，例如朋友圈
+def doVote4():
+    log('doVote4...')
+    d.screen.on()
+    log('doVote4 2....')
+    d(text='wangqingmonkey').click()
+    url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
+    # 打开链接
+    d(text=url).click.wait()
+    log('open webview')
+    # 执行动作
+    time.sleep(4) # 等待页面加载完成。 TODO 可能不在最上方
+    # 设置actions
+    replay()
 
 def vote(account):
     log('vote ' + account + '...')
     restore(account)
-    # 用adb启动微信
-    log('am start app...')
-    os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
+    startApp()
     # 投票
-    doVote3()
+    doVote3(account)
     # 截图
     d.screenshot(account + '_' + 'weixinid_todo' + '.png')
     # 停止微信并保存账号状态
