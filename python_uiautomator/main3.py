@@ -146,8 +146,10 @@ def replay():
     log('replay end')
 
 
+# 注册。通过模拟器
 def register(account, password):
     log('register ' + account + '...')
+    d = Device('192.168.1.105:5555', adb_server_port=5037) # genymotion的序列号
     clearData()
     startApp()
     # 点击注册按钮
