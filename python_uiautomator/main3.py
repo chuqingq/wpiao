@@ -146,7 +146,7 @@ def replay():
     log('replay end')
 
 
-# 注册。通过模拟器
+# TODO 注册。通过模拟器，自动创建新的模拟器，并修改IMEI号
 def register(account, password):
     log('register ' + account + '...')
     d = Device('192.168.1.105:5555', adb_server_port=5037) # genymotion的序列号
@@ -192,8 +192,8 @@ def register(account, password):
     log('regsiter ' + account + ' success')
 
 def registerAll():
-    for (n, p) in accounts.items():
-        register(n, p)
+    for account in accounts.items():
+        register(account['account'], account['password'])
 
 
 def login(account, password):
@@ -224,8 +224,8 @@ def login(account, password):
 # 确保所有的账号都登录了。只提前做一次
 def loginAll():
     # os.system('adb shell pm clear com.tencent.mm HERE')
-    for (n, p) in accounts.items():
-        login(n, p)
+    for account in accounts.items():
+        login(account['account'], account['password'])
     log('login success...')
 
 # 投票分类1：关注微信号，发送指定的内容即投票
