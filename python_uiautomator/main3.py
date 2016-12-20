@@ -24,10 +24,12 @@ d = Device('200ac4ae', adb_server_port=5037) # 三星galaxy E7
 user = 'u0_a140' # 手机上微信的操作系统用户
 
 # 投票地址
-url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
+# url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
+url = 'http://mp.weixin.qq.com/s/GH1FG7hccWW-P1yW75_bxA'
 
 # 投票动作
-actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown',(300, 1230), 'pagedown', 'pagedown', 'pagedown', (300, 465)]
+# actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown',(300, 1230), 'pagedown', 'pagedown', 'pagedown', (300, 465)]
+actions = ['pagedown', 'pagedown', 'pagedown', (300, 836), 'pagedown', 'pagedown', 'pagedown', 'pagedown', (300, 1005), 'pagedown', (300, 251)]
 
 ## ---- 内部函数
 
@@ -224,7 +226,7 @@ def login(account, password):
 # 确保所有的账号都登录了。只提前做一次
 def loginAll():
     # os.system('adb shell pm clear com.tencent.mm HERE')
-    for account in accounts.items():
+    for account in accounts:
         login(account['account'], account['password'])
     log('login success...')
 
@@ -394,6 +396,6 @@ def vote(account):
 
 def voteAll():
     os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
-    for (n, p) in accounts.items():
-        vote(n)
+    for account in accounts:
+        vote(account['account'])
     log('vote success')
