@@ -61,6 +61,7 @@ def clearData():
     log('rm...')
     os.system('adb shell rm -rf /data/data/com.tencent.mm')
     os.system('adb shell rm -rf /mnt/sdcard/tencent')
+    os.system('adb shell rm -rf /mnt/sdcard/Android/data/com.tencent.mm')
     log('mkdir...')
     os.system('adb shell mkdir -p /data/data/com.tencent.mm')
     os.system('adb shell mkdir -p /mnt/sdcard/tencent')
@@ -73,6 +74,7 @@ def restore(account):
     log('restore '+account)
     os.system('adb shell rm -rf /data/data/com.tencent.mm')
     os.system('adb shell rm -rf /mnt/sdcard/tencent')
+    os.system('adb shell rm -rf /mnt/sdcard/Android/data/com.tencent.mm')
     # 移动号码的目录到/data/data/com.tencent.mm
     os.system('adb shell am force-stop com.tencent.mm HERE')
     os.system('adb shell mv /data/data/com.tencent.mm.'+account+' /data/data/com.tencent.mm')
