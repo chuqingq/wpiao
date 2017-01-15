@@ -21,15 +21,12 @@ def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
 d = Device('200ac4ae', adb_server_port=5037) # 三星galaxy E7
-user = 'u0_a140' # 手机上微信的操作系统用户
 
 # 投票地址
-# url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
-url = 'http://mp.weixin.qq.com/s/GH1FG7hccWW-P1yW75_bxA'
+url = 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg'
 
 # 投票动作
-# actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown',(300, 1230), 'pagedown', 'pagedown', 'pagedown', (300, 465)]
-actions = ['pagedown', 'pagedown', 'pagedown', (300, 836), 'pagedown', 'pagedown', 'pagedown', 'pagedown', (300, 1005), 'pagedown', (300, 251)]
+actions = ['pagedown', 'pagedown', 'pagedown', 'pagedown',(300, 1230), 'pagedown', 'pagedown', 'pagedown', (300, 465)]
 
 ## ---- 内部函数
 
@@ -53,24 +50,7 @@ def startApp():
     log('start app...')
     os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
 
-# 创建空数据
-def clearData():
-    log('clear data...')
-    os.system('adb shell am force-stop com.tencent.mm HERE')
-    # 创建空环境
-    log('rm...')
-    os.system('adb shell rm -rf /data/data/com.tencent.mm')
-    os.system('adb shell rm -rf /mnt/sdcard/tencent')
-    os.system('adb shell rm -rf /mnt/sdcard/Android/data/com.tencent.mm')
-    log('mkdir...')
-    os.system('adb shell mkdir -p /data/data/com.tencent.mm')
-    os.system('adb shell mkdir -p /mnt/sdcard/tencent')
-    log('ln...')
-    os.system('adb shell ln -s /data/app/com.tencent.mm-1/lib/arm /data/data/com.tencent.mm/lib')
-    log('chown...')
-    os.system('adb shell chown '+user+':'+user+' /data/data/com.tencent.mm')
-
-def restore(account):
+def restoreX(account):
     log('restore '+account)
     os.system('adb shell rm -rf /data/data/com.tencent.mm')
     os.system('adb shell rm -rf /mnt/sdcard/tencent')
@@ -80,11 +60,80 @@ def restore(account):
     os.system('adb shell mv /data/data/com.tencent.mm.'+account+' /data/data/com.tencent.mm')
     os.system('adb shell mv /mnt/sdcard/tencent.'+account+' /mnt/sdcard/tencent')
 
+def clearData():
+    os.system('adb shell am force-stop com.tencent.mm HERE')
+    os.system('adb shell pm clear com.tencent.mm')
+
+def restore(account):
+    log('restore '+account)
+    os.system('adb shell am force-stop com.tencent.mm HERE')
+    os.system('adb shell pm clear com.tencent.mm')
+    os.system('adb shell rm -rf /mnt/sdcard/tencent')
+    os.system('adb shell rm -rf /mnt/sdcard/Android/data/com.tencent.mm')
+    # 恢复-覆盖
+    os.system('adb shell "cd /data/data/; tar -xf com.tencent.mm.'+account+'.tar"')
+    os.system('adb shell "cd /mnt/sdcard/; tar -xf tencent.'+account+'.tar"')
+
 def backup(account):
     log('backup '+account)
     os.system('adb shell am force-stop com.tencent.mm HERE')
-    os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
-    os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
+    #os.system('adb shell mv /data/data/com.tencent.mm /data/data/com.tencent.mm.'+account)
+    os.system('adb shell "cd /data/data/; tar -cf com.tencent.mm.'+account+'.tar com.tencent.mm"')
+    #os.system('adb shell mv /mnt/sdcard/tencent /mnt/sdcard/tencent.'+account)
+    os.system('adb shell "cd /mnt/sdcard/; tar -cf tencent.'+account+'.tar tencent"')
+    os.system('adb shell pm clear com.tencent.mm')
+    #os.system('adb shell rm -rf /mnt/sdcard/Android/data/com.tencent.mm')
+
+## 养号相关的函数
+
+def chat_with(pname):
+    d(text=pname).click.wait()
+    d(className='android.widget.EditText').click()
+    # d(resourceId='com.tencent.mm:id/chatting_content_et').click()
+    os.system('adb shell input text "ItIsSunnyAndBeautifulDay'+str(time.time())+'"')
+    # d(text='发送').click.wait()
+    d(resourceId='com.tencent.mm:id/chatting_send_btn').click()
+    # os.system('adb shell am broadcast -a ADB_INPUT_TEXT --es msg "终于可以输入中文了:'+str(time.time())+'"')
+    #d(resourceId='com.tencent.mm:id/chatting_send_btn').click()
+    time.sleep(1)
+    #d.press.back()
+    d.press.back()
+
+def intest():
+    # Tencent news
+    d(text='腾讯新闻').click.wait()
+    time.sleep(1)
+    d.press.back()
+    # Begin Chat
+    chat_with('同学滔滔')
+    time.sleep(1)
+    # chat_with('同学-龙影天')
+    # time.sleep(1)
+    chat_with('同事晴晴')
+    time.sleep(2*60*60) # 小时
+
+# 对一个账号进行养号：
+def yanghao(account):
+    #raw_input("\nWill do with "+str(index)+", Press Enter for confirm ...");
+    log('yanghao '+account)
+    try:
+        restore(account)
+        log('Begin start-app: ' + str(time.time()))
+        os.system('adb shell am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI')
+        intest()
+        #raw_input("Waiting for backup, Enter ...");
+    except Exception as e:
+        raise e
+    finally:
+        backup(account)
+        log('***** done *****\n')
+
+def autoyh():
+    index = -1
+    while True:
+        index = (index+1)%len(accounts)
+        account = accounts[index]
+        yanghao(account)
 
 
 ## ---- 业务逻辑
@@ -150,7 +199,7 @@ def replay():
     log('replay end')
 
 
-# TODO 注册。通过模拟器，自动创建新的模拟器，并修改IMEI号
+# 注册。通过模拟器
 def register(account, password):
     log('register ' + account + '...')
     d = Device('192.168.1.105:5555', adb_server_port=5037) # genymotion的序列号
@@ -196,8 +245,8 @@ def register(account, password):
     log('regsiter ' + account + ' success')
 
 def registerAll():
-    for account in accounts.items():
-        register(account['account'], account['password'])
+    for (n, p) in accounts.items():
+        register(n, p)
 
 
 def login(account, password):
@@ -228,8 +277,8 @@ def login(account, password):
 # 确保所有的账号都登录了。只提前做一次
 def loginAll():
     # os.system('adb shell pm clear com.tencent.mm HERE')
-    for account in accounts:
-        login(account['account'], account['password'])
+    for (n, p) in accounts.items():
+        login(n, p)
     log('login success...')
 
 # 投票分类1：关注微信号，发送指定的内容即投票
@@ -398,6 +447,6 @@ def vote(account):
 
 def voteAll():
     os.system('adb shell pm clear com.tencent.mm HERE') # 只是确保，可能会failed
-    for account in accounts:
-        vote(account['account'])
+    for (n, p) in accounts.items():
+        vote(n)
     log('vote success')
