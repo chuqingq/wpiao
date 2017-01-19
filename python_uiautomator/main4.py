@@ -21,7 +21,7 @@ from data import accounts
 def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
-d = Device('f67efca1', adb_server_port=5037) # 三星galaxy E7
+d = Device('071efe2c00e37e37', adb_server_port=55037) # 三星galaxy E7
 # user = 'u0_a140' # 手机上微信的操作系统用户
 
 # 投票地址
@@ -85,8 +85,8 @@ def pageup():
 def record():
     while True:
         # input
-        action = raw_input('input action: ')
-        print 'action: ' + action
+        action = input('input action: ')
+        print('action: ' + action)
         # page down
         if action == 'd' or action == '':
             pagedown()
@@ -99,10 +99,10 @@ def record():
         elif action == 'c': # click
             d.screenshot(u'1.png')
             d.dump(u'1.uix')
-            print 'start uiautomatorviewer...'
+            print('start uiautomatorviewer...')
             os.system('/Users/chuqq/Library/Android/sdk/tools/uiautomatorviewer')
             try:
-                click = raw_input('click x,y=\n')
+                click = input('click x,y=\n')
                 actions.append(eval(click))
             except SyntaxError:
                 continue
@@ -110,8 +110,8 @@ def record():
         elif action == 'e': # end
             break
         else:
-            print 'invalid action: ' + action
-    print actions
+            print('invalid action: ' + action)
+    print(actions)
 
 # 回放
 def replay():
@@ -167,7 +167,7 @@ def register(account, password):
     d(text=u'确定').wait.exists()
     d(text=u'确定').click()
     # 人工接收验证码，并输入，点击下一步
-    raw_input('输入验证码后请点击回车：')
+    input('输入验证码后请点击回车：')
     # 点击“好”（查找你的微信朋友） 如果手机号已绑定，则不会有“好”。建议手工操作
     # d(text=u'好').wait.exists()
     # d(text=u'好').click()
