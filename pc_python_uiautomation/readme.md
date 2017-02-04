@@ -8,5 +8,5 @@ pip install uiautomation
 
 # TODO
 
-* 如何兼容新pc版？不用Scroll
-* 批量手机投票
+* 如何支持新pc版？不用控件的Scroll
+* ~~批量手机投票（已完成）~~
