@@ -1,5 +1,7 @@
 pc版本，使用python的uiautomation驱动。
 
+https://github.com/chuqingq/wpiao/tree/master/pc_python_uiautomation
+
 # 1. 安装python uiautomation
 
 https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
@@ -18,7 +20,9 @@ pip install uiautomation
 # 3. 运行脚本
 
 ```
-python main.py
+python
+>>> import main
+>>> main.voteall()
 ```
 
 # TODO
@@ -34,3 +38,11 @@ python main.py
 * 养号：PC版本，自动发送消息
 * 测试：每天50个
 * 投票：支持PC新版本
+	* 方案：已确认：PC新版本也使用了系统的证书机制和代理机制。因此可以用类似fiddler的方案拿到投票的页面Url，后面用代码实现即可
+		* fiddler安装FiddlerCertMaker.exe插件，用于https注入
+		* 通过Tool->fiddler options->HTTPS->actions->TrustRootCertificate导出fiddler的根证书
+		* 把上述证书导入到系统中
+	* 1、根据根证书制作一个模拟mp.weixin.qq.com:443的服务端（openssl 根证书 制作服务端证书）（phantomjs多实例）
+	* 2、把根证书导入系统
+	* 3、制作一个proxy，把到mp.weixin.qq.com:443的HTTPS CONNECT重定向到步骤1的服务端（goproxy）
+	* 4、步骤1的服务端每收到如下请求，就模拟浏览器进行交互。。。
