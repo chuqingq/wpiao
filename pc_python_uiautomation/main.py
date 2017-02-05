@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import time
-# import logging
 import uiautomation
-
-# logging.basicConfig(filename='main.log',level=logging.DEBUG)
 
 action = {
     'url': 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg',
-    'votes': 25,
+    'votes': 3,
     'clicks': [(12, 363, 336), (17, 364, 321), (23, 366, 511), (28, 665, 249)]
 }
 
@@ -18,31 +15,30 @@ def log(str):
 
 
 def voteall():
+    '''投票'''
     log('voteall() begin...')
-    # 确认要投票的所有窗口
-    windows = []
-    foundIndex = 1
-    while True:
-        log('window: {0}'.format(foundIndex))
-        # 每次取到下一个微信窗口:foundIndex=1
-        window = uiautomation.WindowControl(
-            searchDepth=1, foundIndex=foundIndex, ClassName='WeChatMainWndForPC', SubName=u'微信')
-        if action['votes'] < 0 or not window.Exists():
-            break
-        window.ShowWindow(uiautomation.ShowWindow.Maximize)
-        foundIndex += 1
-        action['votes'] -= 1
-        windows.append(window)
-    log('windows[{0}]: {1}'.format(len(windows), windows))
+    console = uiautomation.GetConsoleWindow()
 
-    for window in windows:
-        if not window.Exists():
+    while action['votes'] > 0:
+        window = uiautomation.WindowControl(
+            searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
+        if not window.Exists(0):
+            log('ERROR: there is no weixin window')
             break
         log('begin window: {0}'.format(window.Handle))
+        window.ShowWindow(uiautomation.ShowWindow.Maximize)
         window.SetActive()
 
-        # 点击“文件传输助手”（要求置顶）
-        uiautomation.Win32API.MouseClick(170, 75)
+        # # 点击搜索
+        # uiautomation.Win32API.MouseClick(126, 24)
+        # # 输入“文件传输助手”
+        # window.SendKeys(u'文件传输助手')
+        # # 点击联系人
+        # uiautomation.Win32API.MouseClick(147, 88)
+
+        # 直接点击第一个联系人
+        uiautomation.Win32API.MouseClick(136, 73)
+        # 输入url
         window.SendKeys(4 * (action['url'] + ' ') + '{Enter}')
 
         # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方）
@@ -61,19 +57,38 @@ def voteall():
             uiautomation.Win32API.MouseClick(x, y)
         # TODO wait
 
+        action['votes'] -= 1
         # 关闭web页面
         page.Close()
+        window.ShowWindow(uiautomation.ShowWindow.ShowMinNoActive)  # 排到最后
         log('end window: {0}'.format(window.Handle))
-
+    console.SetActive()
     log('voteall() end...')
 
-# 录制
+
+def chat(name=u'同事晴晴'):
+    '''养号聊天'''
+    window = uiautomation.WindowControl(
+        searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
+    window.ShowWindow(uiautomation.ShowWindow.Maximize)
+    window.SetActive()
+    # 点击搜索
+    uiautomation.Win32API.MouseClick(126, 24)
+    # 输入对方名字
+    window.SendKeys(name)
+    # 点击对象名称
+    uiautomation.Win32API.MouseClick(147, 88)
+    window.SendKeys(u'你好你好！！！' + '{Enter}')
+    # 这个窗口排到最后
+    window.ShowWindow(uiautomation.ShowWindow.ShowMinNoActive)
+    pass
 
 
 def record(url):
+    '''录制'''
     console = uiautomation.GetConsoleWindow()
     window = uiautomation.WindowControl(
-        searchDepth=1, foundIndex=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
+        searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
     window.ShowWindow(uiautomation.ShowWindow.Maximize)
     window.SetActive()
     # 点击“文件传输助手”（要求置顶）
