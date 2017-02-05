@@ -29,3 +29,8 @@ python main.py
 	* 知道哪个窗口退出了：ControlType:	UIA_PaneControlTypeId (0xC371) Name:	"登录" ClassName:	"WeChatLoginWndForPC"
 	* （不退出时是：Name:	"微信" ControlType:	UIA_WindowControlTypeId (0xC370) ClassName:	"WeChatMainWndForPC"）
 	* 知道是哪个账号：？？
+
+* 养号：和30天以上的互相
+* 养号：PC版本，自动发送消息
+* 测试：每天50个
+* 投票：支持PC新版本
