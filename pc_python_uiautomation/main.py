@@ -14,18 +14,14 @@ def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
 
-def voteall():
+def vote():
     '''投票'''
-    log('voteall() begin...')
+    log('vote() begin...')
     console = uiautomation.GetConsoleWindow()
 
     while action['votes'] > 0:
-        window = uiautomation.WindowControl(
-            searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
-        if not window.Exists(0):
-            log('ERROR: there is no weixin window')
-            break
-        log('begin window: {0}'.format(window.Handle))
+        window = uiautomation.WindowControl(searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
+        log('vote begin window: {0}'.format(window.Handle))
         window.ShowWindow(uiautomation.ShowWindow.Maximize)
         window.SetActive()
 
@@ -39,14 +35,13 @@ def voteall():
         # 直接点击第一个联系人
         uiautomation.Win32API.MouseClick(136, 73)
         # 输入url
-        window.SendKeys(4 * (action['url'] + ' ') + '{Enter}')
+        window.SendKeys(4 * (action['url'] + ' ') + '{Enter}', 0, 0)
 
         # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方）
         uiautomation.Win32API.MouseClick(1130, 480)
 
-        # 打开页面并最大化
-        page = uiautomation.WindowControl(
-            searchDepth=1, ClassName='IEWebViewWnd', SubName=u'微信')
+        # 打开页面并最大化 TODO 第一版是直接打开浏览器，待优化
+        page = uiautomation.WindowControl(searchDepth=1, ClassName='IEWebViewWnd', SubName=u'微信')
         page.ShowWindow(uiautomation.ShowWindow.Maximize)
         page.SetActive()
 
@@ -55,15 +50,17 @@ def voteall():
         for (percent, x, y) in action['clicks']:
             v.SetScrollPercent(0, percent)
             uiautomation.Win32API.MouseClick(x, y)
-        # TODO wait
+        # TODO 等待并截图，或者判断是否成功
 
         action['votes'] -= 1
         # 关闭web页面
         page.Close()
-        window.ShowWindow(uiautomation.ShowWindow.ShowMinNoActive)  # 排到最后
-        log('end window: {0}'.format(window.Handle))
+
+        # 窗口放到最后
+        window.SendKeys('{ALT}{ESC}')
+        log('vote end window: {0}'.format(window.Handle))
     console.SetActive()
-    log('voteall() end...')
+    log('vote() end...')
 
 
 def train():
@@ -89,9 +86,10 @@ def train():
         # 输入url
         window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好你好！！！{Enter}')
 
+        # 窗口放到最后
         window.SendKeys('{ALT}{ESC}')
         log('train end window: {0}'.format(window.Handle))
-        time.sleep(1800)
+        time.sleep(3)
     console.SetActive()
     log('>>>> train() end...')
 
