@@ -66,6 +66,36 @@ def voteall():
     log('voteall() end...')
 
 
+def train():
+    '''养号'''
+    log('>>>> train() begin...')
+    console = uiautomation.GetConsoleWindow()
+
+    while True:
+        window = uiautomation.WindowControl(searchDepth=1,  ClassName='WeChatMainWndForPC', SubName=u'微信')
+        window.ShowWindow(uiautomation.ShowWindow.Maximize)
+        window.SetActive()
+        log('train begin window: {0}'.format(window.Handle))
+
+        # # 点击搜索
+        # uiautomation.Win32API.MouseClick(126, 24)
+        # # 输入“文件传输助手”
+        # window.SendKeys(u'文件传输助手')
+        # # 点击联系人
+        # uiautomation.Win32API.MouseClick(147, 88)
+
+        # 直接点击第一个联系人
+        uiautomation.Win32API.MouseClick(136, 73)
+        # 输入url
+        window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好你好！！！{Enter}')
+
+        window.SendKeys('{ALT}{ESC}')
+        log('train end window: {0}'.format(window.Handle))
+        time.sleep(1800)
+    console.SetActive()
+    log('>>>> train() end...')
+
+
 def chat(name=u'同事晴晴'):
     '''养号聊天'''
     window = uiautomation.WindowControl(
