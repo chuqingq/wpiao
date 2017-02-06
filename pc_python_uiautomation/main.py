@@ -89,7 +89,7 @@ def train():
         # 窗口放到最后
         window.SendKeys('{ALT}{ESC}')
         log('train end window: {0}'.format(window.Handle))
-        time.sleep(3)
+        time.sleep(1800)
     console.SetActive()
     log('>>>> train() end...')
 
