@@ -5,7 +5,7 @@ import uiautomation
 
 action = {
     'url': 'http://mp.weixin.qq.com/s/Nw_Jiahy6tTswuOtPv0-Zg',
-    'votes': 3,
+    'votes': 1,
     'clicks': [(12, 363, 336), (17, 364, 321), (23, 366, 511), (28, 665, 249)]
 }
 
@@ -22,8 +22,11 @@ def vote():
     while action['votes'] > 0:
         window = uiautomation.WindowControl(searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
         log('vote begin window: {0}'.format(window.Handle))
-        window.ShowWindow(uiautomation.ShowWindow.Maximize)
-        window.SetActive()
+        # window.ShowWindow(uiautomation.ShowWindow.Maximize)
+        # window.ShowWindow(uiautomation.ShowWindow.Restore)
+        # window.MoveWindow(0,0,850,590)
+        window.SetActive(waitTime=0)
+        log('setactive')
 
         # # 点击搜索
         # uiautomation.Win32API.MouseClick(126, 24)
@@ -34,33 +37,80 @@ def vote():
 
         # 直接点击第一个联系人
         uiautomation.Win32API.MouseClick(136, 73)
+        log('click')
         # 输入url
         window.SendKeys(4 * (action['url'] + ' ') + '{Enter}', 0, 0)
+        # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方），弹出webview或浏览器
+        uiautomation.Win32API.MouseClick(591, 346)
 
-        # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方）
-        uiautomation.Win32API.MouseClick(1130, 480)
-
-        # 打开页面并最大化 TODO 第一版是直接打开浏览器，待优化
-        page = uiautomation.WindowControl(searchDepth=1, ClassName='IEWebViewWnd', SubName=u'微信')
-        page.ShowWindow(uiautomation.ShowWindow.Maximize)
-        page.SetActive()
-
-        # 滚动到选项
-        v = page.PaneControl(ClassName='Internet Explorer_Server')
-        for (percent, x, y) in action['clicks']:
-            v.SetScrollPercent(0, percent)
-            uiautomation.Win32API.MouseClick(x, y)
+        # 做投票动作
+        dovote3(window)
         # TODO 等待并截图，或者判断是否成功
 
         action['votes'] -= 1
-        # 关闭web页面
-        page.Close()
 
         # 窗口放到最后
         window.SendKeys('{ALT}{ESC}')
         log('vote end window: {0}'.format(window.Handle))
     console.SetActive()
     log('vote() end...')
+
+
+def dovote1():
+    '''方式1：录制一系列动作，然后回放'''
+    # 打开页面并最大化 TODO 第一版是直接打开浏览器，待优化
+    page = uiautomation.WindowControl(searchDepth=1, ClassName='IEWebViewWnd', SubName=u'微信')
+    page.ShowWindow(uiautomation.ShowWindow.Maximize)
+    page.SetActive()
+
+    # 滚动到选项
+    v = page.PaneControl(ClassName='Internet Explorer_Server')
+    for (percent, x, y) in action['clicks']:
+        v.SetScrollPercent(0, percent)
+        uiautomation.Win32API.MouseClick(x, y)
+
+# 性能测试，结果在每秒20~30次之间
+def bench(count=30):
+    log('bench begin...')
+    window = uiautomation.WindowControl(searchDepth = 1, ClassName = 'Notepad', SubName = '无标题 - 记事本')
+    window.SetActive(waitTime=0)
+    window.Maximize(waitTime=0)
+    while count > 0:
+        window = uiautomation.WindowControl(searchDepth = 1, ClassName = 'Notepad', SubName = '无标题 - 记事本')
+        window.SetActive(waitTime=0)
+        window.SendKeys('123123123123123{ENTER}', 0,0)
+        window.SendKeys('{ALT}{ESC}', 0,0)
+        count -= 1
+    log('bench end...')
+
+
+
+def dovote2():
+    '''方式2：打开浏览器，识别单选控件直接select：该方案不可行，控件不能click'''
+    # 1、先获取到浏览器窗口，然后最大化
+    c = uiautomation.GetForegroundControl()
+    w = c.Convert() # c.ControlTypeName == 'WindowControl'
+    w.Maximize()
+    # 2、在窗口中获取单选控件，select
+    r = w.RadioButtonControl(Name=u'选项一在此')
+
+    # Name:   "选项一在此"
+    # ControlType:    UIA_RadioButtonControlTypeId (0xC35D)
+    # LocalizedControlType:   "单选按钮"
+    # 3、获取投票控件，invoke
+    # Name:   "投票"
+    # ControlType:    UIA_ButtonControlTypeId (0xC350)
+    # LocalizedControlType:   "按钮"
+
+def dovote3(window):
+    '''TODO 注册默认浏览器，不弹框，且后台进行投票'''
+    # while True:
+    #     c = uiautomation.GetForegroundControl()
+    #     w = c.Convert()
+    #     if w.Handle != window.Handle:
+    #         break
+    # w.SendKeys('{Ctrl}w', 0,0)
+    pass
 
 
 def train():
@@ -163,3 +213,4 @@ def record(url):
     }
     print('action: ')
     print(action)
+
