@@ -6,7 +6,7 @@
 
 * control pc, execut actions
 
-# browser(n)
+## browser(n)
 
 * system default brower, send normal to voter, for old version only
 
