@@ -15,15 +15,15 @@ import (
 const SHORT_URL = "http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w"
 const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}`
 const DST_VOTES = 1
-const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c200728d1961ac018cf11978985a26153db4e52999fff8c0752d6acea32e2d784dda5df2b23afba6fca6173dfd974bb08f73dc9b30906521d1a2eb9aa66865b4e034af663c6b4bc8b5bcc&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
+const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
 func main() {
 	// 根据短url来获取到投票信息
-	voteInfo, err := NewVoteInfo(SHORT_URL)
+	voteInfo, err := NewVoteInfo(VOTE_URL)
 	if err != nil {
 		log.Fatalf("NewVoteInfo error: %v", err)
 	}
-	log.Printf("VoteInfo: %+v", voteInfo)
+	log.Fatalf("VoteInfo: %+v", voteInfo)
 	// 前端可以通过voteInfo展示信息，例如标题、活动日期、当前票数等
 
 	// 添加到voteInfos中
@@ -64,7 +64,6 @@ func (vis VoteInfos) Get(key string) *VoteInfo {
 
 func (vis VoteInfos) Set(key string, vi *VoteInfo) {
 	vis[key] = vi
-	// TODO 按照__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6格式唯一确定一个voteInfo
 }
 
 func (vis VoteInfos) Del(key string) {
@@ -72,59 +71,109 @@ func (vis VoteInfos) Del(key string) {
 }
 
 type VoteInfo struct {
-	Url      string
-	Key      string                 // 可以唯一标识一个投票的
-	Item     map[string]interface{} // 投的对象
-	DstVotes uint64                 // 目标票数
-	CurVotes uint64                 // 当前票数
+	Url         string
+	Key         string // 可以唯一标识一个投票的
+	Supervoteid string
+	Info        map[string]interface{} // title等信息都在这里
+	Item        map[string]interface{} // 投的对象 TODO 改为DstItem
+	DstVotes    uint64                 // 目标票数
+	CurVotes    uint64                 // 当前票数
 }
 
 func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 	log.Printf("NewVoteInfo shortOrLongUrl: %v", shortOrLongUrl)
-	// 先换成http的 TODO
 
-	// 可能是短连接，也可能是长连接 TODO
-	longUrl := shortOrLongUrl
+	// 设置cookiejar
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		log.Printf("cookiejar.New() error: %v", err)
+		return nil, err
+	}
+
+	client := &http.Client{
+		Jar: jar,
+	}
+
+	vi := &VoteInfo{
+		Url: strings.Replace(shortOrLongUrl, "https:", "http:", 1),
+	}
+
+	resp, err := client.Get(vi.Url)
+	if err != nil {
+		log.Printf("get shorturl error: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	resBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("read body error: %v", err)
+		return nil, err
+	}
+
+	// 可能是短连接，这时需要拿到长连接（不需请求，直接parse拿到参数即可）
 	if strings.Contains(shortOrLongUrl, "/s/") {
-		resp, err := http.Get(shortOrLongUrl)
-		if err != nil {
-			log.Printf("get shorturl error: %v", err)
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		resBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("read body error: %v", err)
-			return nil, err
-		}
-
-		longUrl = string(getByBound(resBody, []byte(`var msg_link = "`), []byte(`";`)))
-		log.Printf("longurl: %v", longUrl)
-		if longUrl == "" {
+		vi.Url = string(getByBound(resBody, []byte(`var msg_link = "`), []byte(`";`)))
+		vi.Url = strings.Replace(vi.Url, "https:", "http:", 1)
+		vi.Url = strings.Replace(vi.Url, `\x26amp;`, `&`, -1)
+		log.Printf("longurl: %v", vi.Url)
+		if vi.Url == "" {
 			log.Printf("get longurl error")
 			return nil, errors.New("get longurl error")
 		}
 	}
 
+	vi.Supervoteid = string(getByBound(resBody, []byte(`supervoteid=`), []byte(`&`)))
+	log.Printf("supervoteid: %v", vi.Supervoteid)
+	if vi.Supervoteid == "" {
+		log.Printf("supervoteid is empty. maybe url is invalid")
+		return nil, errors.New("supervoteid is empty. maybe url is invalid")
+	}
+
 	// 解析longUrl中的参数
-	u, err := url.Parse(longUrl)
+	u, err := url.Parse(vi.Url)
 	if err != nil {
-		log.Printf("parse longurl error: %v", err)
+		log.Printf("parse url error: %v", err)
 		return nil, err
 	}
 
 	values := u.Query()
-	key := "__biz=" + values.Get("__biz") + "&mid=" + values.Get("mid") + "&idx=" + values.Get("idx") + "&sn=" + values.Get("sn")
+	vi.Key = "__biz=" + values.Get("__biz") + "&mid=" + values.Get("mid") + "&idx=" + values.Get("idx") + "&sn=" + values.Get("sn")
 
-	return &VoteInfo{
-		Url: longUrl,
-		Key: key,
-	}, nil
+	// 获取投票信息
+	values.Set("supervoteid", vi.Supervoteid)
+	values.Set("action", "show")
+	showUrl := getNewappmsgvoteShowUrl(values)
+	log.Printf("showUrl: %v", showUrl)
+	resp, err = client.Get(showUrl)
+	if err != nil {
+		log.Printf("getNewappmsgvoteShowUrl error: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	resBody, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("read body 2 error: %v", err)
+		return nil, err
+	}
+
+	voteInfoStr := string(getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`)))
+	log.Printf("voteInfoStr: %v", voteInfoStr) // TODO
+	vi.Info = make(map[string]interface{})
+	err = json.Unmarshal([]byte(voteInfoStr), &vi.Info)
+	log.Printf("info: %v", vi.Info)
+	if err != nil {
+		log.Printf("json.Unmarshal voteInfo error: %v", err)
+		return nil, err
+	}
+
+	return vi, nil
 }
 
 func (vi *VoteInfo) NewVoter(voteUrl string) (*Voter, error) {
 	log.Printf("NewVoter voteUrl: %v", voteUrl)
+	voteUrl = strings.Replace(voteUrl, "https:", "http:", 1)
 
 	// 设置cookiejar
 	jar, err := cookiejar.New(nil)
@@ -152,36 +201,11 @@ func (vi *VoteInfo) NewVoter(voteUrl string) (*Voter, error) {
 }
 
 type Voter struct {
-	url    string // 长地址
+	url    string
 	client *http.Client
 	values url.Values
 	Info   *VoteInfo
 }
-
-// func NewVoter(surl, item string) (*Voter, error) {
-// 	// 设置cookiejar
-// 	jar, err := cookiejar.New(nil)
-// 	if err != nil {
-// 		log.Printf("cookiejar.New() error: %v", err)
-// 		return nil, err
-// 	}
-
-// 	// 解析其他参数
-// 	u, err := url.Parse(surl)
-// 	if err != nil {
-// 		log.Printf("parse url error: %v", err)
-// 		return nil, err
-// 	}
-
-// 	return &Voter{
-// 		url:  surl,
-// 		item: item,
-// 		client: &http.Client{
-// 			Jar: jar,
-// 		},
-// 		values: u.Query(),
-// 	}, nil
-// }
 
 func (v *Voter) Vote() error {
 	err := v.s()
@@ -224,15 +248,15 @@ func (v *Voter) s() error {
 	v.values.Set("wxtoken", string(getByBound(resBody, []byte("window.wxtoken = \""), []byte("\";"))))
 	log.Printf("wxtoken: %v", v.values.Get("wxtoken"))
 	if v.values.Get("wxtoken") == "" {
-		log.Printf("wxtoken error, resBody: %v", string(resBody))
-		return errors.New("get wxtoken error")
+		log.Printf("get wxtoken error. maybe voteUrl expired")
+		return errors.New("get wxtoken error. maybe voteUrl expired")
 	}
 
 	return nil
 }
 
 func (v *Voter) newappmsgvoteShow() error {
-	url := v.getNewappmsgvoteShowUrl()
+	url := getNewappmsgvoteShowUrl(v.values)
 	res, err := v.client.Get(url)
 	if err != nil {
 		log.Printf("newappmsgvoteShow get error: %v", err)
@@ -240,34 +264,17 @@ func (v *Voter) newappmsgvoteShow() error {
 	}
 	defer res.Body.Close()
 
-	// TODO 看需要取什么内容 supervoteid是之前就有的
+	// 这里不需要做什么，supervoteid是之前就有的
 
 	return nil
 }
 
-func (v *Voter) getNewappmsgvoteShowUrl() string {
-	v.values.Set("action", "show")
-	log.Printf("show values: %v", v.values.Encode())
-
-	log.Printf("newappmsgvoteShowUrl: %v", "https://mp.weixin.qq.com/mp/newappmsgvote?"+v.values.Encode())
-	return "https://mp.weixin.qq.com/mp/newappmsgvote?" + v.values.Encode()
+func getNewappmsgvoteShowUrl(values url.Values) string { // TODO 合并
+	return "http://mp.weixin.qq.com/mp/newappmsgvote?" + values.Encode()
 }
 
 func (v *Voter) newappmsgvoteVote() error {
-	// TODO
-	// super_vote_item和super_vote_id是提前组装好的，因此只要encodeURIComponent即可
-	// formdata = "action=vote&__biz=MzA5NjYwOTg0Nw%3D%3D&uin=MTMwMzUxMjg3Mw%3D%3D&key=82438a29ddf26010ada8190c40aa8732323ae7c5941e6665f49b9e53af3ce594ebd25c63141a89301eebbf528329c02a1c7ac13e95a10b84f1c93ddf177ce4ee5b292cdd50d103fce5d0c369140dbee5&pass_ticket=WcK4v4itRVLRoKKVV0rGfjj4IWr2dK%252BXWGhasJO6LN6Ad1pRJMg1ShjC3mux%252BN8W&f=json&json=%7B%22super_vote_item%22%3A%5B%7B%22vote_id%22%3A684888407%2C%22item_idx_list%22%3A%7B%22item_idx%22%3A%5B%220%22%5D%7D%7D%5D%2C%22super_vote_id%22%3A684888406%7D&idx=1&mid=2650886522&wxtoken=543112670"
-	// values := url.Values{}
-	// values.Set("action", "vote")
-	// values.Set("__biz", v.__biz)
-	// values.Set("uin", v.uin) // TODO 是否需要转译？
-	// values.Set("key", v.key)
-	// values.Set("pass_ticket", v.pass_ticket)
-	// values.Set("f", "json")
-	// values.Set("json", item)
-	// values.Set("idx", v.idx)
-	// values.Set("mid", v.mid)
-	// values.Set("wxtoken", v.wxtoken)
+	// TODO 投票对象如何确定？
 	v.values.Set("action", "vote")
 	v.values.Set("f", "json")
 	// v.values.Set("json", v.item)
