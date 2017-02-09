@@ -96,26 +96,26 @@
               <div class="col-sm-4">
                 <div class="input-group">
                   <span class="input-group-addon">xx名称</span>
-                  <input type="text" class="form-control" placeholder="xx名称" v-model="title" readonly>
+                  <input type="text" class="form-control" placeholder="xx名称" v-model="voteinfo.title" readonly>
                 </div>
               </div>
               <div class="col-sm-4">
                 <div class="input-group">
                   <span class="input-group-addon">截止时间</span>
-                  <input type="text" class="form-control" placeholder="Username" v-model="expire_time" readonly>
+                  <input type="text" class="form-control" placeholder="Username" v-model="voteinfo.expire_time" readonly>
                 </div>
               </div>
               <div class="col-sm-4">
                 <div class="input-group">
                   <span class="input-group-addon">xx人数</span>
-                  <input type="text" class="form-control" placeholder="Username" v-model="total_person" readonly>
+                  <input type="text" class="form-control" placeholder="Username" v-model="voteinfo.total_person" readonly>
                 </div>
               </div>
             </div>
             <br>
             <br>
 
-            <mysubject v-for="subject in vote_subject" :model="subject"></mysubject>
+            <mysubject v-for="subject in voteinfo.vote_subject" :model="subject"></mysubject>
           </div>
         </div>
       </div>
@@ -148,7 +148,10 @@
             </thead>
             <tbody>
               <tr v-for="(option, index) in model.options">
-                <td><input type="checkbox"></td>
+                <td>
+                  <input type="radio" v-if="model.type==1">
+                  <input type="checkbox" v-if="model.type==2">
+                </td>
                 <td>{{index}}</td>
                 <td>{{option.name}}</td>
                 <td>{{option.cnt}}</td>
@@ -211,7 +214,7 @@
 
         var vm = new Vue({
           el: '#wrapper',
-          data: voteInfo,
+          data: {voteinfo: voteInfo},
           watch: {
             // selected: function() {},
           },
