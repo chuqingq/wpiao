@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Dashboard Template for Bootstrap</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!-- <link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet"> -->
+
+    <!-- Custom styles for this template -->
+    <link href="dashboard.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <!-- <script src="../../assets/js/ie-emulation-modes-warning.js"></script> -->
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Project name</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Settings</a></li>
+            <li><a href="#">Profile</a></li>
+            <li><a href="#">Help</a></li>
+          </ul>
+          <form class="navbar-form navbar-right">
+            <input type="text" class="form-control" placeholder="Search...">
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+            <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
+            <li><a href="#">Reports</a></li>
+            <li><a href="#">Analytics</a></li>
+            <li><a href="#">Export</a></li>
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href="">Nav item</a></li>
+            <li><a href="">Nav item again</a></li>
+            <li><a href="">One more nav</a></li>
+            <li><a href="">Another nav item</a></li>
+            <li><a href="">More navigation</a></li>
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href="">Nav item again</a></li>
+            <li><a href="">One more nav</a></li>
+            <li><a href="">Another nav item</a></li>
+          </ul>
+        </div>
+
+        <div id="wrapper">
+          <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <div class="input-group">
+              <span class="input-group-addon">xx地址：</span>
+              <input type="text" class="form-control" v-model="title">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button">查询</button>
+              </span>
+            </div>
+            <br>
+
+            <div class="row">
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <span class="input-group-addon">xx名称</span>
+                  <input type="text" class="form-control" placeholder="xx名称" v-model="title" readonly>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <span class="input-group-addon">截止时间</span>
+                  <input type="text" class="form-control" placeholder="Username" v-model="expire_time" readonly>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <span class="input-group-addon">xx人数</span>
+                  <input type="text" class="form-control" placeholder="Username" v-model="total_person" readonly>
+                </div>
+              </div>
+            </div>
+            <br>
+            <br>
+
+            <mysubject v-for="subject in vote_subject" :model="subject"></mysubject>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="./vendor/vuejs/vue.js"></script>
+    <script src="./vendor/jquery/jquery.min.js"></script>
+    <script src="./vendor/bootstrap/js/bootstrap.min.js"></script>
+    <!-- Just to make our placeholder images work. Don't actually copy the next line! -->
+    <!-- <script src="../../assets/js/vendor/holder.min.js"></script> -->
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!-- <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script> -->
+
+    <script type="text/x-template" id="mysubject-template">
+      <div>
+        <div class="panel panel-default">
+          <div class="panel-heading">{{model.title}}</div>
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>选择</th>
+                <th>序号</th>
+                <th>选手名称</th>
+                <th>票数</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(option, index) in model.options">
+                <td><input type="checkbox"></td>
+                <td>{{index}}</td>
+                <td>{{option.name}}</td>
+                <td>{{option.cnt}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </script>
+
+    <script type="text/javascript">
+      var voteInfo = {
+        title: "站前小学“书香家庭”评选活动",
+        vote_permission: 1,
+        expire_time: 1486900800,
+        total_person: 34451,
+        vote_subject: [
+          {
+            type: 1,
+            title: "参加站前小学“书香家庭”评选活动的家庭",
+            options: [
+              {
+                name: "一（1）班魏佳宝家庭",
+                url: "http://mmbiz.qpic.cn/mmbiz_jpg/356Z1iboRaSyU9t6fAr2eKInSib4DA6txYRA9uNvaUhJHX5BwLJutC2vbTtOIprXAMLHyyq5yEc5GtPBtc207hww/0?wx_fmt=jpeg",
+                cnt: 1407,
+                selected: false
+              },
+              {
+                name: "一（2）班吴佳骏家庭",
+                url: "http://mmbiz.qpic.cn/mmbiz_jpg/356Z1iboRaSyU9t6fAr2eKInSib4DA6txY3alszWGDDYFElkBTqKp2dWq71Vu55P3fFdJ74KXtAgiaqfNu6RVIbQw/0?wx_fmt=jpeg",
+                cnt: 434,
+                selected: false
+              }
+            ],
+            total_cnt: 34451,
+            vote_id: 684888407
+          }
+        ],
+        super_vote_id: 684888406,
+        del_flag: 0
+      };
+
+      $(function() {
+        Vue.component('mysubject', {
+          template: '#mysubject-template',
+          props: {
+              model: Object
+          },
+          // data: function () {
+          //     // return {open: false}
+          //     return {}
+          // },
+          computed: {
+              // isFolder: function() {},
+          },
+          methods: {
+              // toggleFolder: function() {}
+          }
+        });
+
+        var vm = new Vue({
+          el: '#wrapper',
+          data: voteInfo,
+          watch: {
+            // selected: function() {},
+          },
+          methods: {
+            // showParams: function() {};
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
