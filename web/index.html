@@ -85,9 +85,9 @@
           <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             <div class="input-group">
               <span class="input-group-addon">xx地址：</span>
-              <input type="text" class="form-control" v-model="title">
+              <input type="text" class="form-control" id="url">
               <span class="input-group-btn">
-                <button class="btn btn-default" type="button">查询</button>
+                <button class="btn btn-default" type="button" id="query">查询</button>
               </span>
             </div>
             <br>
@@ -218,6 +218,15 @@
           methods: {
             // showParams: function() {};
           }
+        });
+
+        $('#query').click(function() {
+          // var url = '/voteinfo?url='+encodeURIComponent($('#url').val());
+          var url = 'voteInfo2.json';
+          $.get(url, function(data, status) {
+            console.log('date='+data + ', status='+status);
+            vm.set('voteinfo', data); // TODO
+          })
         });
       });
     </script>
