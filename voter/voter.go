@@ -20,8 +20,9 @@ const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=26508865
 var gVoteInfos = VoteInfos{}
 
 func main() {
-	http.HandleFunc("/parseurl", ParseUrl)
-	http.HandleFunc("/submittask", SubmitTask)
+	http.HandleFunc("/api/parseurl", ParseUrl)
+	http.HandleFunc("/api/submittask", SubmitTask)
+	http.Handle("/", http.FileServer(http.Dir("../web")))
 
 	const addr = ":8080"
 	log.Printf("listen at %s", addr)
