@@ -64,6 +64,14 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	// TODO
 	log.Printf("/submittask")
 
+	voteResult := r.FormValue("task")
+	if voteResult == "" {
+		log.Printf("task is empty")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("voteResult: %v", voteResult)
 }
 
 // 测试main函数

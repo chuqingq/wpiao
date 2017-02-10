@@ -91,9 +91,9 @@
           <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             <div class="input-group">
               <span class="input-group-addon">xx地址：</span>
-              <input type="text" class="form-control" id="url">
+              <input type="text" class="form-control" v-bind:value="url">
               <span class="input-group-btn">
-                <button class="btn btn-default" type="button" id="query">查询</button>
+                <button class="btn btn-default" type="button" @click="parseurl">查询</button>
               </span>
             </div>
             <br>
@@ -125,7 +125,7 @@
               <mysubject v-for="subject in voteinfo.vote_subject" :model="subject"></mysubject>
               <br>
 
-              <input type="button" class="form-control" id="next" value="下一步">
+              <input type="button" class="form-control" @click="submittask" value="下一步">
             </div>
           </div>
         </div>
@@ -160,7 +160,7 @@
             <tbody>
               <tr v-for="(option, index) in model.options">
                 <td>
-                  <input type="radio" v-bind:name="model.vote_id" v-model="option.selected" v-if="model.type==1">
+                  <input type="radio" v-bind:name="model.vote_id" v-bind:value="index" v-model="model.item_idx" v-if="model.type==1">
                   <input type="checkbox" v-bind:name="model.vote_id" v-model="option.selected" v-if="model.type==2">
                 </td>
                 <td>{{index}}</td>
@@ -242,10 +242,10 @@
             return fmt;
         };
 
-        window.data = {voteinfo: voteInfo};
-        /*var */vm = new Vue({
+        // window.data = {voteinfo: voteInfo};
+        vm = new Vue({
           el: '#wrapper',
-          data: data,
+          data: {voteinfo: voteInfo, url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w'},
           computed: {
             expireTime: function() {
               var d = new Date();
@@ -257,47 +257,46 @@
             // selected: function() {},
           },
           methods: {
-            // showParams: function() {};
+            parseurl: function() {
+              console.log('parseurl:');
+              var url = '/api/parseurl?url='+this.url;
+              var vm = this;
+              // var url = 'voteInfo2.json';
+              $.getJSON(url, function(data, status) {
+                console.log('voteinfo='+JSON.stringify(data));
+                vm.$set(vm,'voteinfo', data)
+                // Vue.set(vm.data, 'voteinfo', 2)
+              })
+            },
+            submittask: function() {
+              console.log('submittask:'/*+JSON.stringify(this.voteinfo)*/);
+              // {"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}
+              var super_vote_item = [];
+              for (var i = 0; i < this.voteinfo.vote_subject.length; i++) {
+                var vote_subject = this.voteinfo.vote_subject[i];
+
+                var item_idx = [];
+                if (vote_subject.type == 1) { // 单选
+                  item_idx.push(''+vote_subject.item_idx);
+                } else if (vote_subject.type == 2) {
+                  item_idx = vote_subject.item_idx;
+                }
+                console.log('item_idx: ' + item_idx);
+
+                super_vote_item.push({vote_id: vote_subject.vote_id, item_idx_list: {item_idx: item_idx}});
+              }
+              var voteResult = {
+                super_vote_id: this.voteinfo.super_vote_id,
+                super_vote_item: super_vote_item
+              };
+              var voteResultStr = JSON.stringify(voteResult);
+              console.log('voteResult: ' + voteResultStr);
+
+              $.getJSON('/api/submittask?task='+voteResultStr, function(data, status) {
+                console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
+              });
+            },
           }
-        });
-
-        $('#query').click(function() {
-          // console.log('query clicked:' + vm.$set('voteinfo', null));
-          // vm.$set('voteinfo.title', '123213123'); // TODO 并乜有什么用
-          data.voteinfo = null;
-
-          var url = '/api/parseurl?url='+encodeURIComponent($('#url').val());
-          // var url = 'voteInfo2.json';
-          $.getJSON(url, function(data, status) {
-            console.log('date='+data + ', status='+status);
-            vm.$set(vm,'voteinfo', data)
-            // Vue.set(vm.data, 'voteinfo', 2)
-          })
-        });
-
-        // TODO 下一步
-        $('#next').click(function() {
-          var voteInfo = window.data.voteinfo;
-          // {"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}
-          var super_vote_item = [];
-          for (var i = 0; i < voteInfo.vote_subject.length; i++) {
-            var vote_subject = voteInfo.vote_subject[i];
-
-            var vote_id = vote_subject.vote_id;
-            var item_idx = [];
-            for (var j = 0; j < vote_subject.options.length; j++) {
-              var option = vote_subject.options[j];
-              if (option.selected)
-                item_idx.push(''+j);
-            }
-
-            super_vote_item.push({vote_id: vote_id, item_idx_list: {item_idx: item_idx}});
-          }
-          var voteResult = {
-            super_vote_id: voteInfo.super_vote_id,
-            super_vote_item: super_vote_item
-          };
-          console.log('voteResult: ' + JSON.stringify(voteResult));
         });
       });
     </script>
