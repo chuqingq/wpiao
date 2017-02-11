@@ -87,18 +87,14 @@
           </ul>
         </div>
 
-        <div id="wrapper">
+        <div id="wrapper" v-cloak>
           <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-            <div class="input-group">
+            <div v-if="step=='parseurl'" class="input-group">
               <span class="input-group-addon">xx地址：</span>
               <input type="text" class="form-control" v-model="url">
-              <span class="input-group-btn">
-                <button class="btn btn-default" type="button" @click="parseurl">查询</button>
-              </span>
             </div>
-            <br>
 
-            <div v-if="voteinfo!=null" v-cloak> 
+            <div v-if="step=='voteresult'">
               <div class="row">
                 <div class="col-sm-4">
                   <div class="input-group">
@@ -122,10 +118,39 @@
               <br>
 
               <mysubject v-for="subject in voteinfo.vote_subject" :model="subject"></mysubject>
-              <br>
-
-              <input type="button" class="form-control" @click="submittask" value="下一步">
             </div>
+
+            <div v-if="step=='submittask'">
+              <div>
+                <div class="input-group">
+                  <span class="input-group-addon">任务名称：</span>
+                  <input type="text" class="form-control" v-model="voteinfo.title"><!-- TODO -->
+                </div>
+                <br>
+                <div class="input-group">
+                  <span class="input-group-addon">任务单价：</span>
+                  <input type="text" class="form-control" v-model="task.price">
+                </div>
+                <br>
+                <div class="input-group">
+                  <span class="input-group-addon">截止时间：</span>
+                  <input type="text" class="form-control" v-model="expireTime">
+                </div>
+                <br>
+                <div class="input-group">
+                  <span class="input-group-addon">投票总数：</span>
+                  <input type="text" class="form-control" v-model="task.votes">
+                </div>
+                <br>
+                <div class="input-group">
+                  <span class="input-group-addon">投票速度：</span>
+                  <input type="text" class="form-control" v-model="task.votespermin">
+                </div>
+              </div>
+            </div>
+
+            <br>
+            <input type="button" class="form-control" @click="next" value="下一步">
           </div>
         </div>
       </div>
@@ -244,7 +269,12 @@
         // window.data = {voteinfo: voteInfo};
         vm = new Vue({
           el: '#wrapper',
-          data: {voteinfo: voteInfo, url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w'},
+          data: {
+            voteinfo: voteInfo, // null
+            url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
+            step: 'parseurl',
+            task: {},
+          },
           computed: {
             expireTime: function() {
               var d = new Date();
@@ -256,6 +286,22 @@
             // selected: function() {},
           },
           methods: {
+            next: function() {
+              console.log('step: ' + this.step);
+              this[this.step]();
+              // if (this.step == 'parseurl') {
+              //   this.parseurl();
+                
+              // }
+              // else if (this.step == 'voteresult') {
+              //   this.voteresult();
+              //   this.step = 'submittask';
+              // }
+              // else if (this.step == 'submittask') {
+              //   this.submittask();
+              //   // this.step = '';
+              // }
+            },
             parseurl: function() {
               console.log('parseurl:' + this.url);
               var url = '/api/parseurl?url='+this.url;
@@ -263,12 +309,13 @@
               // var url = 'voteInfo2.json';
               $.getJSON(url, function(data, status) {
                 console.log('voteinfo='+JSON.stringify(data));
-                vm.$set(vm,'voteinfo', data)
+                vm.$set(vm,'voteinfo', data);
+                vm.step = 'voteresult';
                 // Vue.set(vm.data, 'voteinfo', 2)
-              })
+              });
             },
-            submittask: function() {
-              console.log('submittask:'/*+JSON.stringify(this.voteinfo)*/);
+            voteresult: function() {
+              console.log('voteresult:'/*+JSON.stringify(this.voteinfo)*/);
               // {"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}
               var super_vote_item = [];
               for (var i = 0; i < this.voteinfo.vote_subject.length; i++) {
@@ -291,10 +338,25 @@
               var voteResultStr = JSON.stringify(voteResult);
               console.log('voteResult: ' + voteResultStr);
 
-              $.getJSON('/api/submittask?task='+voteResultStr, function(data, status) {
-                console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
+              var vm = this;
+              var url = '/api/submittask?task='+voteResultStr;
+              console.log('url: ' + url);
+              $.getJSON(url, function(data, status) {
+                console.log('/api/submittask:');
+                // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
+                vm.$set(vm, 'task', {
+                  price: 0.07,
+                  votes: 200,
+                  votespermin: 50,
+                });
+                vm.step = 'submittask';
               });
             },
+            submittask: function() {
+              console.log('submittask:');
+              // TODO
+              this.step = '';
+            }
           }
         });
       });

@@ -72,6 +72,8 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("voteResult: %v", voteResult)
+	// w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{}"))
 }
 
 // 测试main函数
