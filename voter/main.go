@@ -92,16 +92,19 @@ func WsPC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("remoteaddr: %v", ws.RemoteAddr())
-	gWsConns[ws.RemoteAddr().String()] = ws
+	addr := ws.RemoteAddr().String()
+	log.Printf("remoteaddr: %v", addr)
+	gWsConns[addr] = ws
+	defer delete(gWsConns, addr)
 
-	// msgtype, msg, err := ws.ReadMessage()
-	// if err != nil {
-	// 	log.Printf("ws.ReadMessage error: %v", err)
-	// 	return
-	// }
-	// log.Printf("type: %v, content: %v", msgtype, string(msg))
-
+	for {
+		msgtype, msg, err := ws.ReadMessage()
+		if err != nil {
+			log.Printf("ws.ReadMessage error: %v", err)
+			return
+		}
+		log.Printf("type: %v, content: %v", msgtype, string(msg))
+	}
 }
 
 func WsWeb(w http.ResponseWriter, r *http.Request) {
