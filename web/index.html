@@ -124,17 +124,18 @@
               <div>
                 <div class="input-group">
                   <span class="input-group-addon">任务名称：</span>
-                  <input type="text" class="form-control" v-model="voteinfo.title"><!-- TODO -->
+                  <input type="text" class="form-control" v-model="voteinfo.title" readonly>
                 </div>
                 <br>
                 <div class="input-group">
                   <span class="input-group-addon">任务单价：</span>
-                  <input type="text" class="form-control" v-model="task.price">
+                  <input type="text" class="form-control" v-model="task.price" readonly>
+                  <span class="input-group-addon">元</span>
                 </div>
                 <br>
                 <div class="input-group">
                   <span class="input-group-addon">截止时间：</span>
-                  <input type="text" class="form-control" v-model="expireTime">
+                  <input type="text" class="form-control" v-model="expireTime" readonly>
                 </div>
                 <br>
                 <div class="input-group">
@@ -145,12 +146,15 @@
                 <div class="input-group">
                   <span class="input-group-addon">投票速度：</span>
                   <input type="text" class="form-control" v-model="task.votespermin">
+                  <span class="input-group-addon">票/分钟</span>
                 </div>
               </div>
             </div>
 
             <br>
-            <input type="button" class="form-control" @click="next" value="下一步">
+            <div class="col-sm-offset-11">
+              <input type="button" class="form-control" @click="next" value="下一步">
+            </div>
           </div>
         </div>
       </div>
