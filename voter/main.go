@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 const SHORT_URL = "http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w"
@@ -17,7 +19,9 @@ func main() {
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submittask", SubmitTask)
 	// TODO websocket1: /api/ws/pc PC端连接，下发任务
+	http.HandleFunc("/api/ws/pc", WsPC)
 	// TODO websocket2: /api/ws/web web端连接，实时查询状态
+	http.HandleFunc("/api/ws/web", WsWeb)
 	http.Handle("/", http.FileServer(http.Dir("../web")))
 
 	const addr = ":8080"
@@ -72,6 +76,39 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 }
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func WsPC(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/ws/pc")
+
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		if _, ok := err.(websocket.HandshakeError); !ok {
+			log.Println(err)
+		}
+		return
+	}
+
+	log.Printf("remoteaddr: %v", ws.RemoteAddr())
+	gWsConns[ws.RemoteAddr().String()] = ws
+
+	// msgtype, msg, err := ws.ReadMessage()
+	// if err != nil {
+	// 	log.Printf("ws.ReadMessage error: %v", err)
+	// 	return
+	// }
+	// log.Printf("type: %v, content: %v", msgtype, string(msg))
+
+}
+
+func WsWeb(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/ws/web")
+	// TODO
+}
+
 // 测试main函数
 func main2() {
 	// 根据短url来获取到投票信息
@@ -111,3 +148,5 @@ func main2() {
 	err = voter.Vote()
 	log.Printf("vote: %v", err)
 }
+
+var gWsConns = map[string]*websocket.Conn{}
