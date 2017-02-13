@@ -94,7 +94,7 @@
               <input type="text" class="form-control" v-model="url">
             </div>
 
-            <div v-if="step=='voteresult'">
+            <div v-if="step=='selectvote'">
               <div class="row">
                 <div class="col-sm-4">
                   <div class="input-group">
@@ -122,11 +122,35 @@
 
             <div v-if="step=='submittask'">
               <div>
-                <div class="input-group">
+                <!-- <div class="input-group">
                   <span class="input-group-addon">任务名称：</span>
                   <input type="text" class="form-control" v-model="voteinfo.title" readonly>
                 </div>
-                <br>
+                <br> -->
+                <div class="panel panel-default" v-for="(subject, index) in voteitem.super_vote_item">
+                  <div class="panel-heading">{{voteinfo.vote_subject[index].title}}</div>
+                  <table class="table table-condensed">
+                    <thead>
+                      <tr>
+                        <!-- <th>选择</th> -->
+                        <th>序号</th>
+                        <th>选手名称</th>
+                        <th>当前票数</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(option, optionindex) in subject.item_idx_list.item_idx">
+                        <!-- <td>
+                          <input type="radio" v-bind:name="model.vote_id" v-bind:value="index" v-model="model.item_idx" v-if="model.type==1">
+                          <input type="checkbox" v-bind:name="model.vote_id" v-model="option.selected" v-if="model.type==2">
+                        </td> -->
+                        <td>{{option}}</td>
+                        <td>{{voteinfo.vote_subject[index].options[option].name}}</td>
+                        <td>{{voteinfo.vote_subject[index].options[option].cnt}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
                 <div class="input-group">
                   <span class="input-group-addon">任务单价：</span>
                   <input type="text" class="form-control" v-model="task.price" readonly>
@@ -176,7 +200,7 @@
       <div>
         <div class="panel panel-default">
           <div class="panel-heading">{{model.title}}</div>
-          <table class="table table-striped">
+          <table class="table table-condensed">
             <thead>
               <tr>
                 <th>选择</th>
@@ -274,8 +298,9 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
-            voteinfo: voteInfo, // null
             url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
+            voteinfo: voteInfo, // null
+            voteitem: null,
             step: 'parseurl',
             task: {},
           },
@@ -297,8 +322,8 @@
               //   this.parseurl();
                 
               // }
-              // else if (this.step == 'voteresult') {
-              //   this.voteresult();
+              // else if (this.step == 'selectvote') {
+              //   this.selectvote();
               //   this.step = 'submittask';
               // }
               // else if (this.step == 'submittask') {
@@ -314,12 +339,12 @@
               $.getJSON(url, function(data, status) {
                 console.log('voteinfo='+JSON.stringify(data));
                 vm.$set(vm,'voteinfo', data);
-                vm.step = 'voteresult';
+                vm.step = 'selectvote';
                 // Vue.set(vm.data, 'voteinfo', 2)
               });
             },
-            voteresult: function() {
-              console.log('voteresult:'/*+JSON.stringify(this.voteinfo)*/);
+            selectvote: function() {
+              console.log('selectvote:'/*+JSON.stringify(this.voteinfo)*/);
               // {"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}
               var super_vote_item = [];
               for (var i = 0; i < this.voteinfo.vote_subject.length; i++) {
@@ -335,18 +360,20 @@
 
                 super_vote_item.push({vote_id: vote_subject.vote_id, item_idx_list: {item_idx: item_idx}});
               }
-              var voteResult = {
+              var voteItem = {
                 super_vote_id: this.voteinfo.super_vote_id,
                 super_vote_item: super_vote_item
               };
-              var voteResultStr = JSON.stringify(voteResult);
-              console.log('voteResult: ' + voteResultStr);
 
               var vm = this;
-              var url = '/api/submittask?task='+voteResultStr;
+              vm.$set(vm, 'voteitem', voteItem)
+              var voteItemStr = JSON.stringify(voteItem);
+              console.log('voteItemStr: ' + voteItemStr);
+
+              var url = '/api/submititem?item='+voteItemStr;
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
-                console.log('/api/submittask:');
+                console.log('/api/submititem:');
                 // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
                 vm.$set(vm, 'task', {
                   price: 0.07,
@@ -358,8 +385,12 @@
             },
             submittask: function() {
               console.log('submittask:');
-              // TODO
-              this.step = '';
+              var vm = this;
+              var url = '/api/submittask?super_vote_id='+this.voteitem.super_vote_id+'&task='+JSON.stringify(this.task);
+              $.getJSON(url, function(data, status) {
+                console.log('/api/submittask:');
+                vm.step = 'parseurl';
+              });
             }
           }
         });

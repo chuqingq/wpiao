@@ -26,13 +26,14 @@ func (vis VoteInfos) Del(key string) {
 }
 
 type VoteInfo struct {
-	Url         string
-	Key         string // 可以唯一标识一个投票的
+	Key         string // 可以唯一标识一个投票的 TODO
+	Url         string // 短URL
 	Supervoteid string
-	Info        map[string]interface{} // title等信息都在这里
-	Item        map[string]interface{} // 投的对象 TODO 改为DstItem
-	DstVotes    uint64                 // 目标票数
-	CurVotes    uint64                 // 当前票数
+	Info        map[string]interface{} // 投票信息。包括活动标题、到期时间、投票对象等
+	Item        map[string]interface{} // 投的对象
+	Votes       uint64                 // 票数
+	Speed       uint64                 // TODO 暂未使用。每分钟的票数
+	CurVotes    uint64
 }
 
 func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {

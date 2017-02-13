@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	// "fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -13,11 +15,15 @@ const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_id
 const DST_VOTES = 1
 const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
-var gVoteInfos = VoteInfos{}
+var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
+var gVoteInfos = VoteInfos{}        // 经过submittask的
+var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 
 func main() {
 	http.HandleFunc("/api/parseurl", ParseUrl)
+	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
+
 	// TODO websocket1: /api/ws/pc PC端连接，下发任务
 	http.HandleFunc("/api/ws/pc", WsPC)
 	// TODO websocket2: /api/ws/web web端连接，实时查询状态
@@ -29,6 +35,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
+// 根据url解析出投票信息
 func ParseUrl(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/parseurl")
 
@@ -47,6 +54,7 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	// voteInfo["key"] = voteInfo.Key // 添加一个key作为后续操作的标识
 	log.Printf("voteInfo: %+v", voteInfo)
 
 	infoBytes, err := json.Marshal(voteInfo.Info)
@@ -56,23 +64,96 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gVoteInfos.Set(voteInfo.Key, voteInfo)
+	gVoteInfosPrepare.Set(voteInfo.Key, voteInfo)
+
 	w.Write(infoBytes)
 }
 
-func SubmitTask(w http.ResponseWriter, r *http.Request) {
-	// TODO
-	log.Printf("/submittask")
+// 提交投票对象
+func SubmitItem(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/submititem")
 
-	voteResult := r.FormValue("task")
-	if voteResult == "" {
+	itemStr := r.FormValue("item")
+	if itemStr == "" {
+		log.Printf("item is empty")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	item := map[string]interface{}{}
+	err := json.Unmarshal([]byte(itemStr), &item)
+	if err != nil {
+		log.Printf("json.Unmarshal item error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("item: %v", item)
+
+	// 根据super_vote_id查找voteInfo
+	supervoteid := strconv.FormatUint(uint64(item["super_vote_id"].(float64)), 10)
+	log.Printf("supervoteid: %v", supervoteid)
+	var voteInfo *VoteInfo
+	for _, info := range gVoteInfosPrepare {
+		if info.Supervoteid == supervoteid {
+			voteInfo = info
+			break
+		}
+	}
+
+	if voteInfo == nil {
+		log.Printf("voteInfo not found for super_vote_id: %v", supervoteid)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	voteInfo.Item = item
+	w.Write([]byte("{}"))
+}
+
+// 提交任务
+func SubmitTask(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/submititem")
+
+	superVoteId := r.FormValue("super_vote_id")
+	if superVoteId == "" {
+		log.Printf("super_vote_id is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	taskStr := r.FormValue("task")
+	if taskStr == "" {
 		log.Printf("task is empty")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("voteResult: %v", voteResult)
-	// w.WriteHeader(http.StatusOK)
+	task := map[string]interface{}{}
+	err := json.Unmarshal([]byte(taskStr), &task)
+	if err != nil {
+		log.Printf("json.Unmarshal task error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("task: %v", task)
+
+	// 根据super_vote_id查找voteInfo
+	var voteInfo *VoteInfo
+	for _, info := range gVoteInfosPrepare {
+		if info.Supervoteid == superVoteId {
+			voteInfo = info
+			break
+		}
+	}
+
+	if voteInfo == nil {
+		log.Printf("voteInfo not found for super_vote_id: %v", superVoteId)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	voteInfo.Votes = uint64(task["votes"].(float64))
+	voteInfo.Speed = uint64(task["votespermin"].(float64))
 	w.Write([]byte("{}"))
 }
 
@@ -112,44 +193,44 @@ func WsWeb(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
-// 测试main函数
-func main2() {
-	// 根据短url来获取到投票信息
-	voteInfo, err := NewVoteInfo(VOTE_URL)
-	if err != nil {
-		log.Fatalf("NewVoteInfo error: %v", err)
-	}
-	log.Fatalf("VoteInfo: %+v", voteInfo)
-	// 前端可以通过voteInfo展示信息，例如标题、活动日期、当前票数等
+// // 测试main函数
+// func main2() {
+// 	// 根据短url来获取到投票信息
+// 	voteInfo, err := NewVoteInfo(VOTE_URL)
+// 	if err != nil {
+// 		log.Fatalf("NewVoteInfo error: %v", err)
+// 	}
+// 	log.Fatalf("VoteInfo: %+v", voteInfo)
+// 	// 前端可以通过voteInfo展示信息，例如标题、活动日期、当前票数等
 
-	// 添加到voteInfos中
-	voteInfos := VoteInfos{}
-	voteInfos.Set(voteInfo.Key, voteInfo)
+// 	// 添加到voteInfos中
+// 	voteInfos := VoteInfos{}
+// 	voteInfos.Set(voteInfo.Key, voteInfo)
 
-	// 前端确定投票对象（可以根据ID）
-	item := make(map[string]interface{})
-	err = json.Unmarshal([]byte(ITEM), &item)
-	if err != nil {
-		log.Fatalf("json.Unmarshal ITEM error: %v", err)
-	}
+// 	// 前端确定投票对象（可以根据ID）
+// 	item := make(map[string]interface{})
+// 	err = json.Unmarshal([]byte(ITEM), &item)
+// 	if err != nil {
+// 		log.Fatalf("json.Unmarshal ITEM error: %v", err)
+// 	}
 
-	// 根据key（前端有）找到voteInfo，设置item
-	key := voteInfo.Key
-	voteInfo2 := voteInfos.Get(key)
-	voteInfo2.Item = item
-	voteInfo2.DstVotes = DST_VOTES
+// 	// 根据key（前端有）找到voteInfo，设置item
+// 	key := voteInfo.Key
+// 	voteInfo2 := voteInfos.Get(key)
+// 	voteInfo2.Item = item
+// 	voteInfo2.Votes = DST_VOTES
 
-	// 根据账号的url和item来执行
-	voteInfo3 := voteInfos.Get(key)
-	voter, err := voteInfo3.NewVoter(VOTE_URL)
-	if err != nil {
-		log.Printf("newvoter error: %v", err)
-		return
-	}
-	log.Printf("Voter: %+v", voter)
+// 	// 根据账号的url和item来执行
+// 	voteInfo3 := voteInfos.Get(key)
+// 	voter, err := voteInfo3.NewVoter(VOTE_URL)
+// 	if err != nil {
+// 		log.Printf("newvoter error: %v", err)
+// 		return
+// 	}
+// 	log.Printf("Voter: %+v", voter)
 
-	err = voter.Vote()
-	log.Printf("vote: %v", err)
-}
+// 	err = voter.Vote()
+// 	log.Printf("vote: %v", err)
+// }
 
 var gWsConns = map[string]*websocket.Conn{}
