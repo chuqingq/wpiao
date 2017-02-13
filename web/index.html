@@ -84,32 +84,34 @@
 
           <div>
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='tasklist'">
-              <table class="table table-condensed">
-                <thead>
-                  <tr>
-                    <th>序号</th>
-                    <th>活动</th>
-                    <th>当前票数</th>
-                    <th>任务票数</th>
-                    <th>进度</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(task, index) in tasks">
-                    <td>{{index+1}}</td>
-                    <td>{{task.title}}</td>
-                    <td>{{task.curvotes}}</td>
-                    <td>{{task.votes}}</td>
-                    <td>
-                      <div class="progress">
-                      <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">
-                        60%
-                      </div>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="panel panel-primary">
+                <div class="panel-heading">任务列表</div>
+                  <table class="table table-condensed">
+                    <thead>
+                      <tr>
+                        <th>序号</th>
+                        <th>活动</th>
+                        <th>当前票数</th>
+                        <th>任务票数</th>
+                        <th>进度</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(task, index) in tasks">
+                        <td>{{index+1}}</td>
+                        <td>{{task.title}}</td>
+                        <td>{{task.curvotes}}</td>
+                        <td>{{task.votes}}</td>
+                        <td>
+                          <div class="progress">
+                            <div class="progress-bar progress-bar-striped" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">60%</div>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <!-- newtask -->
@@ -177,7 +179,7 @@
                     <input type="text" class="form-control" v-model="voteinfo.title" readonly>
                   </div>
                   <br>
-                  <div class="panel panel-default" v-for="(subject, index) in voteitem.super_vote_item">
+                  <div class="panel panel-primary" v-for="(subject, index) in voteitem.super_vote_item">
                     <div class="panel-heading">{{voteinfo.vote_subject[index].title}}</div>
                     <table class="table table-condensed">
                       <thead>
@@ -221,14 +223,15 @@
                 </div>
               </div>
 
-              <br>
-              <div class="col-sm-offset-11">
+              
+              <div class="col-sm-offset-11" v-if="step!='success'">
+                <br>
                 <button type="button btn-primary" class="form-control" @click="next">下一步</button>
               </div>
 
               <!-- TODO -->
-              <div class="alert alert-success" role="alert">
-                <a href="#" class="alert-link">12312312313123.</a>
+              <div class="alert alert-info" v-if="step=='success'">
+                您已成功下发任务，点击<a href="#" class="alert-link" @click="stepTaskList">这里查看任务</a>
               </div>
             </div>
           </div>
@@ -311,6 +314,7 @@
             },
             stepNewTask: function() {
               this.step1 = 'newtask';
+              this.step = 'parseurl';
             },
 
             // step2
@@ -377,7 +381,7 @@
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
                 console.log('/api/submittask:');
-                vm.step = 'parseurl';
+                vm.step = 'success';
               });
             }
           }
