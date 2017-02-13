@@ -84,7 +84,32 @@
 
           <div>
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='tasklist'">
-            123123123
+              <table class="table table-condensed">
+                <thead>
+                  <tr>
+                    <th>序号</th>
+                    <th>活动</th>
+                    <th>当前票数</th>
+                    <th>任务票数</th>
+                    <th>进度</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(task, index) in tasks">
+                    <td>{{index+1}}</td>
+                    <td>{{task.title}}</td>
+                    <td>{{task.curvotes}}</td>
+                    <td>{{task.votes}}</td>
+                    <td>
+                      <div class="progress">
+                      <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">
+                        60%
+                      </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <!-- newtask -->
@@ -118,7 +143,7 @@
                 <br>
 
                 <div v-for="subject in voteinfo.vote_subject">
-                  <div class="panel panel-default">
+                  <div class="panel panel-primary">
                     <div class="panel-heading">{{subject.title}}</div>
                     <table class="table table-condensed">
                       <thead>
@@ -198,7 +223,12 @@
 
               <br>
               <div class="col-sm-offset-11">
-                <input type="button" class="form-control" @click="next" value="下一步">
+                <button type="button btn-primary" class="form-control" @click="next">下一步</button>
+              </div>
+
+              <!-- TODO -->
+              <div class="alert alert-success" role="alert">
+                <a href="#" class="alert-link">12312312313123.</a>
               </div>
             </div>
           </div>
@@ -241,12 +271,28 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
-            step1: 'tasklist',
-            step: 'parseurl',
+            step1: 'tasklist', // 当前第一级步骤：tasklist任务列表，newtask新建任务
+            tasks: [{
+              id: 1,
+              title: '站前小学“书香家庭”评选活动',
+              starttime: 1486985931579,
+              votes: 100,
+              curvotes: 50,
+              status: 'voting'
+            }, {
+              id: 2,
+              title: '站前小学“书香家庭”评选活动',
+              starttime: 1486985921579,
+              votes: 200,
+              curvotes: 200,
+              status: 'finished'
+            }],
+
+            step: 'parseurl', // 当前第二级步骤：parseurl、submititem、submittask
             url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
-            voteinfo: voteInfo, // null
-            voteitem: null,
-            task: {},
+            voteinfo: voteInfo, // 投票信息，最初是null
+            voteitem: null, // 投票对象
+            task: {}, // 主备下发的任务
           },
           computed: {
             expireTime: function() {
