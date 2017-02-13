@@ -155,6 +155,26 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	voteInfo.Votes = uint64(task["votes"].(float64))
 	voteInfo.Speed = uint64(task["votespermin"].(float64))
 	w.Write([]byte("{}"))
+
+	// 处理任务
+	pcCount := len(gWsConns)
+	if pcCount == 0 {
+		log.Printf("ERROR executer not found")
+		return
+	}
+
+	for _, wsConn := range gWsConns {
+		req := map[string]interface{}{}
+		req["cmd"] = "vote"
+		req["url"] = voteInfo.Url
+		req["votes"] = voteInfo.Votes
+		err := wsConn.WriteJSON(req)
+		if err != nil {
+			log.Printf("ws.WriteJSON error: %v", err)
+		}
+		log.Printf("dispatch task(%v,%v) to executer(%v)", voteInfo.Url, voteInfo.Votes, wsConn.RemoteAddr().String())
+		break // TODO 暂时直接把所有票数都发到第一个pc上去
+	}
 }
 
 var upgrader = websocket.Upgrader{

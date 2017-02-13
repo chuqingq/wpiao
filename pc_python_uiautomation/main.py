@@ -1,29 +1,32 @@
 # -*- coding: utf-8 -*-
 
 import websocket
-import thread
+# import thread
 import time
+import json
 
 import vote
 
 def on_message(ws, message):
-    print 'on_message: ' + message
+    print('on_message: ' + message)
     msg = json.loads(message)
-    if msg.cmd == 'vote':
-        # 投票 {"cmd":"vote", "count": 100}
-        vote.vote(msg.url, msg.count)
-    else if msg.cmd == 'train':
+    if msg['cmd'] == 'vote':
+        # 投票 {"cmd":"vote", "url": "http://wxxxx", "votes": 100}
+        vote.vote(msg['url'], msg['votes'])
+    elif msg['cmd'] == 'train':
         vote.train()
+    else:
+        print('cmd('+msg['cmd']+') is invalid')
     # 其他动作：TODO
 
 def on_error(ws, error):
-    print 'on_error: ', error
+    print('on_error: ', error)
 
 def on_close(ws):
-    print "on_close: "
+    print("on_close: ")
 
 def on_open(ws):
-    print 'on_open: '
+    print('on_open: ')
     # def run(*args):
     #     for i in range(3):
     #         time.sleep(1)
