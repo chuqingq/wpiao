@@ -153,7 +153,7 @@
                 </div>
                 <div class="input-group">
                   <span class="input-group-addon">任务单价：</span>
-                  <input type="text" class="form-control" v-model="task.price" readonly>
+                  <input type="text" class="form-control" v-model.number="task.price" type="number" readonly>
                   <span class="input-group-addon">元</span>
                 </div>
                 <br>
@@ -164,12 +164,12 @@
                 <br>
                 <div class="input-group">
                   <span class="input-group-addon">投票总数：</span>
-                  <input type="text" class="form-control" v-model="task.votes">
+                  <input type="text" class="form-control" v-model.number="task.votes" type="number">
                 </div>
                 <br>
                 <div class="input-group">
                   <span class="input-group-addon">投票速度：</span>
-                  <input type="text" class="form-control" v-model="task.votespermin">
+                  <input type="text" class="form-control" v-model.number="task.votespermin" type="number">
                   <span class="input-group-addon">票/分钟</span>
                 </div>
               </div>
@@ -377,8 +377,8 @@
                 // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
                 vm.$set(vm, 'task', {
                   price: 0.07,
-                  votes: 200,
-                  votespermin: 50,
+                  votes: 1,
+                  votespermin: 1,
                 });
                 vm.step = 'submittask';
               });
@@ -387,6 +387,7 @@
               console.log('submittask:');
               var vm = this;
               var url = '/api/submittask?super_vote_id='+this.voteitem.super_vote_id+'&task='+JSON.stringify(this.task);
+              console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
                 console.log('/api/submittask:');
                 vm.step = 'parseurl';
