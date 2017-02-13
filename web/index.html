@@ -91,8 +91,8 @@
                       <tr>
                         <th>序号</th>
                         <th>活动</th>
-                        <th>当前票数</th>
                         <th>任务票数</th>
+                        <th>当前票数</th>
                         <th>进度</th>
                       </tr>
                     </thead>
@@ -100,11 +100,11 @@
                       <tr v-for="(task, index) in tasks">
                         <td>{{index+1}}</td>
                         <td>{{task.title}}</td>
-                        <td>{{task.curvotes}}</td>
                         <td>{{task.votes}}</td>
+                        <td>{{task.curvotes}}</td>
                         <td>
                           <div class="progress">
-                            <div class="progress-bar progress-bar-striped" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">60%</div>
+                            <div class="progress-bar progress-bar-striped" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{task.curvotes*100/task.votes}}%</div>
                           </div>
                         </td>
                       </tr>
@@ -315,6 +315,10 @@
             stepNewTask: function() {
               this.step1 = 'newtask';
               this.step = 'parseurl';
+              $.getJSON('/api/tasks', function(data, status) {
+                console.log('/api/tasks:')
+                vm.$set(vm, 'tasks', data);
+              });
             },
 
             // step2
@@ -385,6 +389,12 @@
               });
             }
           }
+        });
+
+        $.getJSON('/api/tasks', function(data, status) {
+          console.log('/api/tasks:');
+          console.log('tasks: ' + JSON.stringify(data));
+          vm.$set(vm, 'tasks', data);
         });
       });
     </script>

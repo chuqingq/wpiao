@@ -20,6 +20,7 @@ var gVoteInfos = VoteInfos{}        // 经过submittask的
 var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 
 func main() {
+	http.HandleFunc("/api/tasks", Tasks)
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
@@ -33,6 +34,29 @@ func main() {
 	const addr = ":8080"
 	log.Printf("listen at %s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+func Tasks(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Tasks: %+v", gVoteInfos)
+
+	tasks := []map[string]interface{}{}
+	for _, info := range gVoteInfos {
+		task := map[string]interface{}{}
+		task["title"] = info.Info["title"]
+		task["votes"] = info.Votes
+		task["curvotes"] = info.CurVotes
+		tasks = append(tasks, task)
+	}
+	log.Printf("tasks: %+v", tasks)
+
+	tasksBytes, err := json.Marshal(tasks)
+	if err != nil {
+		log.Printf("json.Marshal error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(tasksBytes)
 }
 
 // 根据url解析出投票信息
@@ -71,7 +95,7 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 
 // 提交投票对象
 func SubmitItem(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/submititem")
+	log.Printf("SubmitItem:")
 
 	itemStr := r.FormValue("item")
 	if itemStr == "" {
@@ -112,7 +136,7 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 
 // 提交任务
 func SubmitTask(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/submititem")
+	log.Printf("SubmitTask:")
 
 	superVoteId := r.FormValue("super_vote_id")
 	if superVoteId == "" {
@@ -140,6 +164,7 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	// 根据super_vote_id查找voteInfo
 	var voteInfo *VoteInfo
 	for _, info := range gVoteInfosPrepare {
+		log.Printf("info.Supervoteid: %v", info.Supervoteid)
 		if info.Supervoteid == superVoteId {
 			voteInfo = info
 			break
@@ -155,6 +180,10 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	voteInfo.Votes = uint64(task["votes"].(float64))
 	voteInfo.Speed = uint64(task["votespermin"].(float64))
 	w.Write([]byte("{}"))
+
+	// 需要把voteinfo从prepare放在voting中
+	delete(gVoteInfosPrepare, voteInfo.Key)
+	gVoteInfos.Set(voteInfo.Key, voteInfo)
 
 	// 处理任务
 	pcCount := len(gWsConns)
