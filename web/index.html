@@ -69,8 +69,8 @@
         <div class="row">
           <div class="col-sm-3 col-md-2 sidebar">
             <ul class="nav nav-sidebar">
-              <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
-              <li><a href="#">Reports</a></li>
+              <li v-bind:class="{active: step1=='tasklist'}"><a href="#" @click="stepTaskList">任务列表 <span class="sr-only">(current)</span></a></li>
+              <li v-bind:class="{active: step1=='newtask'}"><a href="#" @click="stepNewTask">新建任务</a></li>
               <li><a href="#">Analytics</a></li>
               <li><a href="#">Export</a></li>
             </ul>
@@ -79,17 +79,16 @@
               <li><a href="">Nav item again</a></li>
               <li><a href="">One more nav</a></li>
               <li><a href="">Another nav item</a></li>
-              <li><a href="">More navigation</a></li>
-            </ul>
-            <ul class="nav nav-sidebar">
-              <li><a href="">Nav item again</a></li>
-              <li><a href="">One more nav</a></li>
-              <li><a href="">Another nav item</a></li>
             </ul>
           </div>
 
           <div>
-            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='tasklist'">
+            123123123
+            </div>
+
+            <!-- newtask -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='newtask'">
               <div v-if="step=='parseurl'" class="input-group">
                 <span class="input-group-addon">xx地址：</span>
                 <input type="text" class="form-control" v-model="url">
@@ -242,10 +241,11 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
+            step1: 'tasklist',
+            step: 'parseurl',
             url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
             voteinfo: voteInfo, // null
             voteitem: null,
-            step: 'parseurl',
             task: {},
           },
           computed: {
@@ -259,6 +259,15 @@
             // selected: function() {},
           },
           methods: {
+            // step1
+            stepTaskList: function() {
+              this.step1 = 'tasklist';
+            },
+            stepNewTask: function() {
+              this.step1 = 'newtask';
+            },
+
+            // step2
             next: function() {
               console.log('step: ' + this.step);
               this[this.step]();
