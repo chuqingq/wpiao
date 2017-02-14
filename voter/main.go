@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	// "fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -15,11 +14,16 @@ const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_id
 const DST_VOTES = 1
 const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
+var gUsers = Users{}
 var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
 var gVoteInfos = VoteInfos{}        // 经过submittask的
 var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 
 func main() {
+	// beego.BConfig.WebConfig.Session.SessionOn = true
+	// beego.BConfig.WebConfig.Session.SessionProvider 默认是 memory，目前支持还有 file、mysql、redis 等
+	// beego.BConfig.WebConfig.Session.SessionGCMaxLifetime 默认3600秒
+	http.HandleFunc("/api/login", Login)
 	http.HandleFunc("/api/tasks", Tasks)
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submititem", SubmitItem)
@@ -36,8 +40,24 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
+func Login(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Login:")
+
+	succ := gUsers.Login(w, r)
+	if !succ {
+		// w.Write([]byte(`{"ret":403,"msg":"username or "}`))
+		return
+	}
+
+	w.Write([]byte(`{"ret":0,"msg":"login success"}`))
+}
+
 func Tasks(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Tasks: %+v", gVoteInfos)
+
+	if !gUsers.Login(w, r) {
+		return
+	}
 
 	tasks := []map[string]interface{}{}
 	for _, info := range gVoteInfos {
@@ -62,6 +82,10 @@ func Tasks(w http.ResponseWriter, r *http.Request) {
 // 根据url解析出投票信息
 func ParseUrl(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/parseurl")
+
+	if !gUsers.Login(w, r) {
+		return
+	}
 
 	voteUrl := r.FormValue("url")
 	if voteUrl == "" {
@@ -96,6 +120,10 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 // 提交投票对象
 func SubmitItem(w http.ResponseWriter, r *http.Request) {
 	log.Printf("SubmitItem:")
+
+	if !gUsers.Login(w, r) {
+		return
+	}
 
 	itemStr := r.FormValue("item")
 	if itemStr == "" {
@@ -137,6 +165,10 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 // 提交任务
 func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	log.Printf("SubmitTask:")
+
+	if !gUsers.Login(w, r) {
+		return
+	}
 
 	superVoteId := r.FormValue("super_vote_id")
 	if superVoteId == "" {
