@@ -338,6 +338,7 @@
               // var url = 'voteInfo2.json';
               $.getJSON(url, function(data, status) {
                 console.log('voteinfo='+JSON.stringify(data));
+                vm.checklogin(data);
                 vm.$set(vm,'voteinfo', data);
                 vm.step = 'selectvote';
                 // Vue.set(vm.data, 'voteinfo', 2)
@@ -374,6 +375,7 @@
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
                 console.log('/api/submititem:');
+                vm.checklogin(data);
                 // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
                 vm.$set(vm, 'task', {
                   price: 0.07,
@@ -389,6 +391,7 @@
               var url = '/api/submittask?super_vote_id='+this.voteitem.super_vote_id+'&task='+JSON.stringify(this.task);
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
+                vm.checklogin(data);
                 console.log('/api/submittask:');
                 vm.step = 'success';
               });
