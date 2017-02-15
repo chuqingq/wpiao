@@ -17,7 +17,7 @@ def log(str):
 def vote(url, count):
     '''投票'''
     log('vote() begin...')
-    console = uiautomation.GetConsoleWindow()
+    # console = uiautomation.GetConsoleWindow()
 
     while count > 0:
         window = uiautomation.WindowControl(searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
@@ -39,7 +39,7 @@ def vote(url, count):
         uiautomation.Win32API.MouseClick(136, 73)
         log('click')
         # 输入url
-        window.SendKeys(4 * (url + ' ') + '{Enter}', 0, 0)
+        window.SendKeys(1 * (url + ' ') + '{Enter}', 0, 0)
         # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方），弹出webview或浏览器
         uiautomation.Win32API.MouseClick(591, 346)
 
@@ -52,7 +52,7 @@ def vote(url, count):
         # 窗口放到最后
         window.SendKeys('{ALT}{ESC}')
         log('vote end window: {0}'.format(window.Handle))
-    console.SetActive()
+    # console.SetActive()
     log('vote() end...')
 
 

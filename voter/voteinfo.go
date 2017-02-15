@@ -36,6 +36,24 @@ type VoteInfo struct {
 	CurVotes    uint64
 }
 
+func GetKeyFromUrl(voteUrl string) string {
+	// 解析longUrl中的参数
+	u, err := url.Parse(voteUrl)
+	if err != nil {
+		log.Printf("getKeyFromUrl: parse url error: %v", err)
+		return ""
+	}
+
+	values := u.Query()
+	if values.Get("__biz") == "" {
+		log.Printf("getKeyFromUrl: __biz is empty")
+		return ""
+	}
+
+	key := "__biz=" + values.Get("__biz") + "&mid=" + values.Get("mid") + "&idx=" + values.Get("idx") + "&sn=" + values.Get("sn")
+	return key
+}
+
 func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 	log.Printf("NewVoteInfo shortOrLongUrl: %v", shortOrLongUrl)
 

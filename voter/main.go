@@ -19,6 +19,8 @@ var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
 var gVoteInfos = VoteInfos{}        // 经过submittask的
 var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 
+var gWsConns = map[string]*websocket.Conn{}
+
 func main() {
 	// beego.BConfig.WebConfig.Session.SessionOn = true
 	// beego.BConfig.WebConfig.Session.SessionProvider 默认是 memory，目前支持还有 file、mysql、redis 等
@@ -31,6 +33,8 @@ func main() {
 
 	// TODO websocket1: /api/ws/pc PC端连接，下发任务
 	http.HandleFunc("/api/ws/pc", WsPC)
+	http.HandleFunc("/api/vote", PCVote)
+
 	// TODO websocket2: /api/ws/web web端连接，实时查询状态
 	http.HandleFunc("/api/ws/web", WsWeb)
 	http.Handle("/", http.FileServer(http.Dir("../web")))
@@ -269,6 +273,44 @@ func WsPC(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// browser把url发过来
+func PCVote(w http.ResponseWriter, r *http.Request) {
+	log.Printf("PCVote:")
+
+	voteUrl := r.FormValue("url")
+	if voteUrl == "" {
+		log.Printf("url is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("voteUrl: %v", voteUrl)
+
+	key := GetKeyFromUrl(voteUrl)
+	if key == "" {
+		log.Printf("get empty key from url %v", voteUrl)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	voteInfo, ok := gVoteInfos[key]
+	if !ok {
+		log.Printf("key %v not found in voteinfos: url: %v", key, voteUrl)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	voter, err := voteInfo.NewVoter(voteUrl)
+	if err != nil {
+		log.Printf("newvoter error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	voter.Vote()
+	w.WriteHeader(http.StatusOK)
+	return
+}
+
 func WsWeb(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/ws/web")
 	// TODO
@@ -313,5 +355,3 @@ func WsWeb(w http.ResponseWriter, r *http.Request) {
 // 	err = voter.Vote()
 // 	log.Printf("vote: %v", err)
 // }
-
-var gWsConns = map[string]*websocket.Conn{}
