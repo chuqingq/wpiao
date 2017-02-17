@@ -25,7 +25,7 @@ def vote(url, count):
         # window.ShowWindow(uiautomation.ShowWindow.Maximize)
         # window.ShowWindow(uiautomation.ShowWindow.Restore)
         # window.MoveWindow(0,0,850,590)
-        window.SetActive(waitTime=0)
+        window.SetActive(waitTime=2)
         log('setactive')
 
         # # 点击搜索
@@ -41,7 +41,8 @@ def vote(url, count):
         # 输入url
         window.SendKeys(1 * (url + ' ') + '{Enter}', 0, 0)
         # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方），弹出webview或浏览器
-        uiautomation.Win32API.MouseClick(591, 346)
+        # uiautomation.Win32API.MouseClick(591, 346)
+        uiautomation.Win32API.MouseClick(1670, 819)
 
         # 做投票动作
         # dovote3(window)

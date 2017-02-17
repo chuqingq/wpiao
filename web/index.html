@@ -319,7 +319,7 @@
             },
             parseurl: function() {
               console.log('parseurl:' + this.url);
-              var url = '/api/parseurl?url='+this.url;
+              var url = '/api/parseurl?url='+encodeURIComponent(this.url);
               var vm = this;
               // var url = 'voteInfo2.json';
               $.getJSON(url, function(data, status) {
