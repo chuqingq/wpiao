@@ -137,7 +137,8 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := map[string]interface{}{}
-	err := json.Unmarshal([]byte(itemStr), &item)
+	// err := json.Unmarshal([]byte(itemStr), &item)
+	err := jsonUnmarshal([]byte(itemStr), &item)
 	if err != nil {
 		log.Printf("json.Unmarshal item error: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -146,7 +147,9 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 	log.Printf("item: %v", item)
 
 	// 根据super_vote_id查找voteInfo
-	supervoteid := strconv.FormatUint(uint64(item["super_vote_id"].(float64)), 10)
+	// supervoteid := strconv.FormatUint(uint64(item["super_vote_id"].(float64)), 10)
+	supervoteidNumber, _ := item["super_vote_id"].(json.Number).Int64()
+	supervoteid := strconv.FormatUint(uint64(supervoteidNumber), 10)
 	log.Printf("supervoteid: %v", supervoteid)
 	var voteInfo *VoteInfo
 	for _, info := range gVoteInfosPrepare {

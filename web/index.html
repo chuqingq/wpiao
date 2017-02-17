@@ -159,7 +159,7 @@
                         <tr v-for="(option, index) in subject.options">
                           <td>
                             <input type="radio" v-bind:name="subject.vote_id" v-bind:value="index" v-model="subject.item_idx" v-if="subject.type==1">
-                            <input type="checkbox" v-bind:name="subject.vote_id" v-model="option.selected" v-if="subject.type==2">
+                            <input type="checkbox" v-bind:name="subject.vote_id" v-bind:value="index" v-model="option.selected" v-if="subject.type==2">
                           </td>
                           <td>{{index}}</td>
                           <td>{{option.name}}</td>
@@ -341,7 +341,13 @@
                 if (vote_subject.type == 1) { // 单选
                   item_idx.push(''+vote_subject.item_idx);
                 } else if (vote_subject.type == 2) {
-                  item_idx = vote_subject.item_idx;
+                  // TODO vuejs如何认为多个checkbox是一组？
+                  for (var index in vote_subject.options) {
+                    var option = vote_subject.options[index];
+                    if (option.selected) {
+                      item_idx.push(''+index);
+                    }
+                  }
                 }
                 console.log('item_idx: ' + item_idx);
 

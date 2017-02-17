@@ -9,6 +9,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"bytes"
 )
 
 type VoteInfos map[string]*VoteInfo
@@ -135,7 +136,8 @@ func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 	voteInfoStr := string(getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`)))
 	log.Printf("voteInfoStr: %v", voteInfoStr) // TODO
 	vi.Info = make(map[string]interface{})
-	err = json.Unmarshal([]byte(voteInfoStr), &vi.Info)
+	// err = json.Unmarshal([]byte(voteInfoStr), &vi.Info)
+	err = jsonUnmarshal([]byte(voteInfoStr), &vi.Info)
 	log.Printf("info: %v", vi.Info)
 	if err != nil {
 		log.Printf("json.Unmarshal voteInfo error: %v", err)
@@ -172,4 +174,10 @@ func (vi *VoteInfo) NewVoter(voteUrl string) (*Voter, error) {
 		values: u.Query(),
 		Info:   vi,
 	}, nil
+}
+
+func jsonUnmarshal(data []byte, v interface{}) error {
+	d := json.NewDecoder(bytes.NewReader(data))
+	d.UseNumber()
+	return d.Decode(v)
 }
