@@ -158,8 +158,8 @@
                       <tbody>
                         <tr v-for="(option, index) in subject.options">
                           <td>
-                            <input type="radio" v-bind:name="subject.vote_id" v-bind:value="index" v-model="subject.item_idx" v-if="subject.type==1">
-                            <input type="checkbox" v-bind:name="subject.vote_id" v-bind:value="index" v-model="option.selected" v-if="subject.type==2">
+                            <input type="radio" v-bind:name="subject.vote_id" v-bind:value="index" v-bind:disabled="isExpired" v-model="subject.item_idx" v-if="subject.type==1">
+                            <input type="checkbox" v-bind:name="subject.vote_id" v-bind:value="index" v-bind:disabled="isExpired"  v-model="option.selected" v-if="subject.type==2">
                           </td>
                           <td>{{index}}</td>
                           <td>{{option.name}}</td>
@@ -225,7 +225,7 @@
               
               <div class="col-sm-offset-11" v-if="step!='success'">
                 <br>
-                <button type="button btn-primary" class="form-control" @click="next">下一步</button>
+                <button type="button btn-primary" class="form-control" v-bind:disabled="isExpired" @click="next">下一步</button>
               </div>
 
               <!-- TODO -->
@@ -286,7 +286,14 @@
             expireTime: function() {
               var d = new Date();
               d.setTime(this.voteinfo.expire_time*1000);
-              return d.Format('yyyy-MM-dd hh:mm:ss');
+              var expiredDesc = this.isExpired ? ' [活动已结束]' : '';
+              return d.Format('yyyy-MM-dd hh:mm') + expiredDesc;
+            },
+            isExpired: function() {
+              if (this.voteinfo == null) {
+                return false;
+              }
+              return (this.voteinfo.expire_time - (+new Date()))>0 ? 0 : 1;
             }
           },
           watch: {

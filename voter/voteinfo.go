@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -9,7 +10,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
-	"bytes"
 )
 
 type VoteInfos map[string]*VoteInfo
