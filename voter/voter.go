@@ -40,7 +40,8 @@ func (v *Voter) Vote() error {
 	}
 
 	// 增加voteInfo的计数
-	v.Info.CurVotes += 1
+	// v.Info.CurVotes += 1
+	v.Info.IncrVotes()
 	return nil
 }
 

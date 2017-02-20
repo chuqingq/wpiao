@@ -16,8 +16,8 @@ const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=26508865
 
 // var gUsers = Users{}
 var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
-var gVoteInfos = VoteInfos{}        // 经过submittask的
-var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
+// var gVoteInfos = VoteInfos{}        // 经过submittask的
+// var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 
 var gWsConns = map[string]*websocket.Conn{}
 
@@ -53,8 +53,8 @@ func main() {
 func Login(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Login:")
 
-	succ := UserLogin(w, r)
-	if !succ {
+	user := UserLogin(w, r)
+	if user == nil {
 		// w.Write([]byte(`{"ret":403,"msg":"username or "}`))
 		return
 	}
@@ -63,14 +63,24 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Tasks(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Tasks: %+v", gVoteInfos)
+	log.Printf("Tasks:")
 
-	if !UserLogin(w, r) {
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	// 获取任务时需要按照user获取
+	voteInfos, err := QueryVoteInfosByUser(user.UserName)
+	if err != nil {
+		log.Printf("QueryVoteInfosByUser error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	tasks := []map[string]interface{}{}
-	for _, info := range gVoteInfos {
+	// for _, info := range gVoteInfos {
+	for _, info := range voteInfos {
 		task := map[string]interface{}{}
 		task["title"] = info.Info["title"]
 		task["votes"] = info.Votes
@@ -93,7 +103,8 @@ func Tasks(w http.ResponseWriter, r *http.Request) {
 func ParseUrl(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/parseurl")
 
-	if !UserLogin(w, r) {
+	user := UserLogin(w, r)
+	if user == nil {
 		return
 	}
 
@@ -131,7 +142,8 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 func SubmitItem(w http.ResponseWriter, r *http.Request) {
 	log.Printf("SubmitItem:")
 
-	if !UserLogin(w, r) {
+	user := UserLogin(w, r)
+	if user == nil {
 		return
 	}
 
@@ -179,7 +191,8 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	log.Printf("SubmitTask:")
 
-	if !UserLogin(w, r) {
+	user := UserLogin(w, r)
+	if user == nil {
 		return
 	}
 
@@ -222,13 +235,22 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	voteInfo.User = user.UserName
 	voteInfo.Votes = uint64(task["votes"].(float64))
 	voteInfo.Speed = uint64(task["votespermin"].(float64))
+
+	// 写到数据库中
+	err = voteInfo.Insert()
+	if err != nil {
+		log.Printf("voteinfo.insert error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Write([]byte("{}"))
 
 	// 需要把voteinfo从prepare放在voting中
 	delete(gVoteInfosPrepare, voteInfo.Key)
-	gVoteInfos.Set(voteInfo.Key, voteInfo)
+	// gVoteInfos.Set(voteInfo.Key, voteInfo)
 
 	// 处理任务
 	pcCount := len(gWsConns)
@@ -301,9 +323,15 @@ func PCVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	voteInfo, ok := gVoteInfos[key]
-	if !ok {
-		log.Printf("key %v not found in voteinfos: url: %v", key, voteUrl)
+	// voteInfo, ok := gVoteInfos[key]
+	// if !ok {
+	// 	log.Printf("key %v not found in voteinfos: url: %v", key, voteUrl)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
+	voteInfo, err := QueryVoteInfoByKey(key)
+	if err != nil {
+		log.Printf("QueryVoteInfoByKey(%s) error: %v", key, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
