@@ -11,6 +11,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var gUsers Users
+
 // type Users map[string]*User
 type Users []*User
 
@@ -29,17 +31,17 @@ type User struct {
 // 第一步：如果带了正确的cookie，则成功，返回true，不返回结果
 // 第二步：如果没带正确的cookie，且没带正确的用户名密码，则失败，返回false，返回结果
 // 第三步：如果没带正确的cookie，带了正确的用户名密码，则成功，返回true，且设置了cookie，不返回结果
-func (us Users) Login(w http.ResponseWriter, r *http.Request) bool {
+func UserLogin(w http.ResponseWriter, r *http.Request) bool {
 	log.Printf("users Login:")
 
 	// 从数据库里读取所有用户名密码
-	err := MgoFind("weipiao", "user", bson.M{}, &us)
+	err := MgoFind("weipiao", "user", bson.M{}, &gUsers)
 	if err != nil {
 		log.Printf("MgoFind user error: %v", err)
 		return false
 	}
 
-	if us.checkCookie(w, r) {
+	if checkCookie(w, r) {
 		return true
 	}
 
@@ -51,7 +53,7 @@ func (us Users) Login(w http.ResponseWriter, r *http.Request) bool {
 	password := r.FormValue("password")
 	log.Printf("password: %v", password)
 
-	if !us.check(username, password, timestamp) {
+	if !check(username, password, timestamp) {
 		log.Printf("check user error")
 		w.Write([]byte(`{"ret":403,"msg":"username or password is invalid"}`))
 		return false
@@ -81,7 +83,7 @@ func (us Users) Login(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (us Users) checkCookie(w http.ResponseWriter, r *http.Request) bool {
+func checkCookie(w http.ResponseWriter, r *http.Request) bool {
 	log.Printf("checkCookie: ")
 
 	// 检查cookie是否合法、未过期
@@ -94,7 +96,7 @@ func (us Users) checkCookie(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	succ := us.check(usernameCookie.Value, passwordCookie.Value, timestampCookie.Value)
+	succ := check(usernameCookie.Value, passwordCookie.Value, timestampCookie.Value)
 	if !succ {
 		log.Printf("check error")
 		// w.Write([]byte(`{"ret":403,"msg":"check cookie error"}`))
@@ -104,7 +106,7 @@ func (us Users) checkCookie(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (us Users) check(username, password, timestamp string) bool {
+func check(username, password, timestamp string) bool {
 	log.Printf("check: %v, %v, %v", username, password, timestamp)
 
 	// timestamp是超时时间,单位是秒，password是salt+password做sha1后的结果
@@ -128,7 +130,7 @@ func (us Users) check(username, password, timestamp string) bool {
 	// 获取密码
 	// u := gUsers[username]
 	var u *User
-	for _, user := range us {
+	for _, user := range gUsers {
 		if user.UserName == username {
 			u = user
 			break
