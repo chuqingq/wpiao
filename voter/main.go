@@ -22,6 +22,12 @@ var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 var gWsConns = map[string]*websocket.Conn{}
 
 func main() {
+	// connect mongo
+	err := InitMongo("127.0.0.1")
+	if err != nil {
+		log.Fatalf("init mongo error: %v", err)
+	}
+
 	// beego.BConfig.WebConfig.Session.SessionOn = true
 	// beego.BConfig.WebConfig.Session.SessionProvider 默认是 memory，目前支持还有 file、mysql、redis 等
 	// beego.BConfig.WebConfig.Session.SessionGCMaxLifetime 默认3600秒
