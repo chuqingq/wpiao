@@ -203,6 +203,14 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// url
+	voteUrl := r.FormValue("url")
+	if voteUrl == "" {
+		log.Printf("url is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	// info
 	infoStr := r.FormValue("info")
 	if infoStr == "" {
@@ -252,6 +260,8 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	log.Printf("task: %v", task)
 
 	voteInfo := &VoteInfo{
+		Url:   voteUrl,
+		Key:   GetKeyFromUrl(voteUrl),
 		Info:  info,
 		Item:  item,
 		User:  user.UserName,

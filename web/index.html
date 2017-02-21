@@ -340,6 +340,7 @@
                 vm.$set(vm,'voteinfo', data);
                 vm.step = 'selectvote';
                 // Vue.set(vm.data, 'voteinfo', 2)
+                // vm.voteinfo.expire_time+=10000000
               });
             },
             selectvote: function() {
@@ -393,7 +394,8 @@
               console.log('submittask:');
               var vm = this;
               // var url = '/api/submittask?super_vote_id='+this.voteitem.super_vote_id+'&task='+JSON.stringify(this.task);
-              var url = '/api/submittask?info='+encodeURIComponent(JSON.stringify(this.voteinfo))
+              var url = '/api/submittask?url='+encodeURIComponent(this.url)
+                +'&info='+encodeURIComponent(JSON.stringify(this.voteinfo))
                 +'&item='+encodeURIComponent(JSON.stringify(this.voteitem))
                 +'&task='+encodeURIComponent(JSON.stringify(this.task));
               console.log('url: ' + url);
