@@ -1,5 +1,7 @@
 package main
 
+// 接口文档参考：https://godoc.org/gopkg.in/mgo.v2
+
 import (
 	// "encoding/hex"
 	"log"

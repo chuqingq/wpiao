@@ -19,14 +19,8 @@ type Users []*User
 type User struct {
 	UserName string `bson:"username"`
 	Password string `bson:"password"`
+	IsAdmin  bool   `bson:"isadmin"`
 }
-
-// func init() {
-// 	gUsers["user1"] = &User{
-// 		UserName: "user1",
-// 		Password: "user1",
-// 	}
-// }
 
 // 第一步：如果带了正确的cookie，则成功，返回true，不返回结果
 // 第二步：如果没带正确的cookie，且没带正确的用户名密码，则失败，返回false，返回结果
@@ -85,6 +79,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 	return u
 }
 
+// 返回nil说明check失败，已写入响应
 func checkCookie(w http.ResponseWriter, r *http.Request) *User {
 	log.Printf("checkCookie: ")
 
@@ -94,14 +89,14 @@ func checkCookie(w http.ResponseWriter, r *http.Request) *User {
 	timestampCookie, timestampCookieErr := r.Cookie("wp_timestamp")
 	if usernameCookieErr != nil || passwordCookieErr != nil || timestampCookieErr != nil {
 		log.Printf("get cookie error")
-		// w.Write([]byte(`{"ret":403,"msg":"cookie is invalid"}`))
+		w.Write([]byte(`{"ret":403,"msg":"cookie is invalid"}`))
 		return nil
 	}
 
 	u := check(usernameCookie.Value, passwordCookie.Value, timestampCookie.Value)
 	if u == nil {
 		log.Printf("check error")
-		// w.Write([]byte(`{"ret":403,"msg":"check cookie error"}`))
+		w.Write([]byte(`{"ret":403,"msg":"check cookie error"}`))
 		return nil
 	}
 
@@ -154,4 +149,19 @@ func check(username, password, timestamp string) *User {
 	}
 
 	return u
+}
+
+func (user *User) Insert() error {
+	return MgoInsert("weipiao", "user", user)
+}
+
+func (user *User) QueryAllUsers() ([]*User, error) {
+	var users []*User
+	err := MgoFind("weipiao", "user", bson.M{}, &users)
+	if err != nil {
+		log.Printf("MgoFind users error: %v", err)
+		return nil, err
+	}
+
+	return users, nil
 }

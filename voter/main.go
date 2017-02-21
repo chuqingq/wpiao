@@ -14,15 +14,10 @@ const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_id
 const DST_VOTES = 1
 const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
-// var gUsers = Users{}
-// var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
-// var gVoteInfos = VoteInfos{}        // 经过submittask的
-// var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
-
 var gWsConns = map[string]*websocket.Conn{}
 
 func main() {
-	// connect mongo
+	// mongo
 	err := InitMongo("127.0.0.1")
 	if err != nil {
 		log.Fatalf("init mongo error: %v", err)
@@ -36,6 +31,9 @@ func main() {
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
+
+	http.HandleFunc("/api/users", UsersHandle)
+	http.HandleFunc("/api/newuser", NewUser)
 
 	// TODO websocket1: /api/ws/pc PC端连接，下发任务
 	http.HandleFunc("/api/ws/pc", WsPC)
@@ -55,7 +53,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	user := UserLogin(w, r)
 	if user == nil {
-		// w.Write([]byte(`{"ret":403,"msg":"username or "}`))
+		// 如果返回nil，说明失败，内部会回复响应，所以这里直接return
 		return
 	}
 
@@ -63,7 +61,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Tasks(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Tasks:")
+	log.Printf("/api/tasks:")
 
 	user := UserLogin(w, r)
 	if user == nil {
@@ -79,7 +77,6 @@ func Tasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tasks := []map[string]interface{}{}
-	// for _, info := range gVoteInfos {
 	for _, info := range voteInfos {
 		task := map[string]interface{}{}
 		task["title"] = info.Info["title"]
@@ -101,7 +98,7 @@ func Tasks(w http.ResponseWriter, r *http.Request) {
 
 // 根据url解析出投票信息
 func ParseUrl(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/parseurl")
+	log.Printf("/api/parseurl:")
 
 	user := UserLogin(w, r)
 	if user == nil {
@@ -123,7 +120,6 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// voteInfo["key"] = voteInfo.Key // 添加一个key作为后续操作的标识
 	log.Printf("voteInfo: %+v", voteInfo)
 
 	infoBytes, err := json.Marshal(voteInfo.Info)
@@ -133,64 +129,18 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// gVoteInfosPrepare.Set(voteInfo.Key, voteInfo)
-	// voteInfo.Insert()
-
 	w.Write(infoBytes)
 }
 
 // 提交投票对象
 func SubmitItem(w http.ResponseWriter, r *http.Request) {
-	log.Printf("SubmitItem:")
+	log.Printf("/api/submititem:")
 
 	user := UserLogin(w, r)
 	if user == nil {
 		return
 	}
 
-	// itemStr := r.FormValue("item")
-	// if itemStr == "" {
-	// 	log.Printf("item is empty")
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// item := map[string]interface{}{}
-	// // err := json.Unmarshal([]byte(itemStr), &item)
-	// err := jsonUnmarshal([]byte(itemStr), &item)
-	// if err != nil {
-	// 	log.Printf("json.Unmarshal item error: %v", err)
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
-	// log.Printf("item: %v", item)
-
-	// // 根据super_vote_id查找voteInfo
-	// // supervoteid := strconv.FormatUint(uint64(item["super_vote_id"].(float64)), 10)
-	// supervoteidNumber, _ := item["super_vote_id"].(json.Number).Int64()
-	// supervoteid := strconv.FormatUint(uint64(supervoteidNumber), 10)
-	// log.Printf("supervoteid: %v", supervoteid)
-	// // var voteInfo *VoteInfo
-	// // for _, info := range gVoteInfosPrepare {
-	// // 	if info.Supervoteid == supervoteid {
-	// // 		voteInfo = info
-	// // 		break
-	// // 	}
-	// // }
-	// voteInfo, err := QueryVoteInfoBySuperVoteId(supervoteid)
-	// if err != nil {
-	// 	log.Printf("QueryVoteInfoBySuperVoteId(%s) error: %v", supervoteid, err)
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// if voteInfo == nil {
-	// 	log.Printf("voteInfo not found for super_vote_id: %v", supervoteid)
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
-
-	// voteInfo.Item = item
 	w.Write([]byte("{}"))
 }
 
@@ -260,42 +210,17 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	log.Printf("task: %v", task)
 
 	voteInfo := &VoteInfo{
-		Url:   voteUrl,
-		Key:   GetKeyFromUrl(voteUrl),
-		Info:  info,
-		Item:  item,
-		User:  user.UserName,
-		Votes: uint64(task["votes"].(float64)),
-		Speed: uint64(task["votespermin"].(float64)),
+		Url:    voteUrl,
+		Key:    GetKeyFromUrl(voteUrl),
+		Info:   info,
+		Item:   item,
+		User:   user.UserName,
+		Votes:  uint64(task["votes"].(float64)),
+		Speed:  uint64(task["votespermin"].(float64)),
+		Status: "doing",
 	}
-	// 根据super_vote_id查找voteInfo
-	// var voteInfo *VoteInfo
-	// for _, info := range gVoteInfosPrepare {
-	// 	log.Printf("info.Supervoteid: %v", info.Supervoteid)
-	// 	if info.Supervoteid == superVoteId {
-	// 		voteInfo = info
-	// 		break
-	// 	}
-	// }
-	// voteInfo, err := QueryVoteInfoBySuperVoteId(superVoteId)
-	// if err != nil {
-	// 	log.Printf("QueryVoteInfoBySuperVoteId(%s) error: %v", superVoteId, err)
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// if voteInfo == nil {
-	// 	log.Printf("voteInfo not found for super_vote_id: %v", superVoteId)
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
-
-	// voteInfo.User = user.UserName
-	// voteInfo.Votes = uint64(task["votes"].(float64))
-	// voteInfo.Speed = uint64(task["votespermin"].(float64))
 
 	// 写到数据库中
-	// err = voteInfo.Submit()
 	err = voteInfo.Insert()
 	if err != nil {
 		log.Printf("voteinfo.insert error: %v", err)
@@ -303,11 +228,6 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("{}"))
-
-	// 需要把voteinfo从prepare放在voting中
-	// delete(gVoteInfosPrepare, voteInfo.Key)
-	voteInfo.SetStatus("doing")
-	// gVoteInfos.Set(voteInfo.Key, voteInfo)
 
 	// 处理任务
 	pcCount := len(gWsConns)
@@ -380,12 +300,6 @@ func PCVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// voteInfo, ok := gVoteInfos[key]
-	// if !ok {
-	// 	log.Printf("key %v not found in voteinfos: url: %v", key, voteUrl)
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
 	voteInfo, err := QueryVoteInfoByKey(key)
 	if err != nil {
 		log.Printf("QueryVoteInfoByKey(%s) error: %v", key, err)
@@ -410,42 +324,71 @@ func WsWeb(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
-// // 测试main函数
-// func main2() {
-// 	// 根据短url来获取到投票信息
-// 	voteInfo, err := NewVoteInfo(VOTE_URL)
-// 	if err != nil {
-// 		log.Fatalf("NewVoteInfo error: %v", err)
-// 	}
-// 	log.Fatalf("VoteInfo: %+v", voteInfo)
-// 	// 前端可以通过voteInfo展示信息，例如标题、活动日期、当前票数等
+func UsersHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/users")
 
-// 	// 添加到voteInfos中
-// 	voteInfos := VoteInfos{}
-// 	voteInfos.Set(voteInfo.Key, voteInfo)
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
 
-// 	// 前端确定投票对象（可以根据ID）
-// 	item := make(map[string]interface{})
-// 	err = json.Unmarshal([]byte(ITEM), &item)
-// 	if err != nil {
-// 		log.Fatalf("json.Unmarshal ITEM error: %v", err)
-// 	}
+	users, err := user.QueryAllUsers()
+	if err != nil {
+		log.Printf("QueryAllUsers error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-// 	// 根据key（前端有）找到voteInfo，设置item
-// 	key := voteInfo.Key
-// 	voteInfo2 := voteInfos.Get(key)
-// 	voteInfo2.Item = item
-// 	voteInfo2.Votes = DST_VOTES
+	by, err := json.Marshal(users)
+	if err != nil {
+		log.Printf("marshal users(%v) error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-// 	// 根据账号的url和item来执行
-// 	voteInfo3 := voteInfos.Get(key)
-// 	voter, err := voteInfo3.NewVoter(VOTE_URL)
-// 	if err != nil {
-// 		log.Printf("newvoter error: %v", err)
-// 		return
-// 	}
-// 	log.Printf("Voter: %+v", voter)
+	w.Write(by)
+}
 
-// 	err = voter.Vote()
-// 	log.Printf("vote: %v", err)
-// }
+func NewUser(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/newuser")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		log.Printf("current user is not admin")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	username := r.FormValue("username")
+	if username == "" {
+		log.Printf("username is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	password := r.FormValue("password")
+	if password == "" {
+		log.Printf("password is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	newuser := &User{
+		UserName: username,
+		Password: password,
+		IsAdmin:  false,
+	}
+
+	err := newuser.Insert()
+	if err != nil {
+		log.Printf("user insert error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("{}"))
+}

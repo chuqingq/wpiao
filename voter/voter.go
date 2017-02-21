@@ -7,9 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	// "net/http/cookiejar"
 	"net/url"
-	// "strings"
 )
 
 type Voter struct {
@@ -116,10 +114,8 @@ func (v *Voter) newappmsgvoteVote() error {
 	log.Printf("resBody: %v", string(resBody))
 
 	resData := map[string]interface{}{}
-	// {"base_resp":{"ret":-6,"errmsg":"freq"}} // TODO 可以简化为直接字符串匹配json
-	// err = json.Unmarshal(resBody, &resData)
+
 	err = jsonUnmarshal(resBody, &resData)
-	// if err != nil || int(resData["base_resp"].(map[string]interface{})["ret"].(float64)) != 0 {
 	if err != nil || resData["base_resp"].(map[string]interface{})["ret"].(json.Number).String() != "0" {
 		// 也是一种错误场景
 		log.Printf("vote error: %v", string(resBody))
