@@ -29,8 +29,9 @@ func (vis VoteInfos) Del(key string) {
 }
 
 type VoteInfo struct {
-	Key         string                 `bson:"key"` // 可以唯一标识一个投票的 TODO
-	Url         string                 `bson:"url"` // 短URL
+	Key         string                 `bson:"key"`    // 可以唯一标识一个投票的 TODO
+	Status      string                 `bson:"status"` // 任务状态：prepare,doing,finished
+	Url         string                 `bson:"url"`    // 短URL
 	Supervoteid string                 `bson:"supervoteid"`
 	Info        map[string]interface{} `bson:"info"`  // 投票信息。包括活动标题、到期时间、投票对象等
 	Item        map[string]interface{} `bson:"item"`  // 投的对象
@@ -73,7 +74,8 @@ func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 	}
 
 	vi := &VoteInfo{
-		Url: strings.Replace(shortOrLongUrl, "https:", "http:", 1),
+		Url:    strings.Replace(shortOrLongUrl, "https:", "http:", 1),
+		Status: "prepare",
 	}
 
 	resp, err := client.Get(vi.Url)
@@ -137,7 +139,7 @@ func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 	}
 
 	voteInfoStr := string(getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`)))
-	log.Printf("voteInfoStr: %v", voteInfoStr) // TODO
+	log.Printf("voteInfoStr: %v", voteInfoStr)
 	vi.Info = make(map[string]interface{})
 	// err = json.Unmarshal([]byte(voteInfoStr), &vi.Info)
 	err = jsonUnmarshal([]byte(voteInfoStr), &vi.Info)
@@ -170,7 +172,6 @@ func (vi *VoteInfo) NewVoter(voteUrl string) (*Voter, error) {
 
 	return &Voter{
 		url: voteUrl,
-		// item: item, // TODO 应该放在VoteInfo中
 		client: &http.Client{
 			Jar: jar,
 		},
@@ -180,6 +181,12 @@ func (vi *VoteInfo) NewVoter(voteUrl string) (*Voter, error) {
 }
 
 func (vi *VoteInfo) Insert() error {
+	return MgoInsert("weipiao", "task", vi)
+}
+
+// 提交任务
+func (vi *VoteInfo) Submit() error {
+	// update votes/item等字段 TODO
 	return MgoInsert("weipiao", "task", vi)
 }
 
@@ -209,10 +216,34 @@ func QueryVoteInfoByKey(key string) (*VoteInfo, error) {
 	return voteinfo[0], nil
 }
 
+func QueryVoteInfoBySuperVoteId(supervoteid string) (*VoteInfo, error) {
+	var voteinfo []*VoteInfo
+	err := MgoFind("weipiao", "task", bson.M{"supervoteid": supervoteid}, &voteinfo)
+	if err != nil {
+		log.Printf("MgoFind(task) error: %v", err)
+		return nil, err
+	}
+
+	if len(voteinfo) == 0 {
+		return nil, errors.New("voteinfo not found: supervoteid: " + supervoteid)
+	}
+
+	return voteinfo[0], nil
+}
+
 func (vi *VoteInfo) IncrVotes() error {
-	vi.Votes += 1
-	// TODO 更新数据库
-	return nil
+	vi.CurVotes += 1
+	if vi.CurVotes >= vi.Votes {
+		vi.Status = "finished"
+	}
+
+	// TODO 目前都是按key唯一的，后续需要按id
+	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
+}
+
+func (vi *VoteInfo) SetStatus(status string) error {
+	vi.Status = status
+	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
 }
 
 func jsonUnmarshal(data []byte, v interface{}) error {

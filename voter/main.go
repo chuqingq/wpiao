@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
+	// "strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,7 +15,7 @@ const DST_VOTES = 1
 const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
 // var gUsers = Users{}
-var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
+// var gVoteInfosPrepare = VoteInfos{} // 经过parseurl但未submittask的
 // var gVoteInfos = VoteInfos{}        // 经过submittask的
 // var gVoteInfosFinish = VoteInfos{}  // 已经投票完成的 TODO 暂未使用
 
@@ -133,7 +133,8 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gVoteInfosPrepare.Set(voteInfo.Key, voteInfo)
+	// gVoteInfosPrepare.Set(voteInfo.Key, voteInfo)
+	// voteInfo.Insert()
 
 	w.Write(infoBytes)
 }
@@ -147,43 +148,49 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemStr := r.FormValue("item")
-	if itemStr == "" {
-		log.Printf("item is empty")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// itemStr := r.FormValue("item")
+	// if itemStr == "" {
+	// 	log.Printf("item is empty")
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	item := map[string]interface{}{}
-	// err := json.Unmarshal([]byte(itemStr), &item)
-	err := jsonUnmarshal([]byte(itemStr), &item)
-	if err != nil {
-		log.Printf("json.Unmarshal item error: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	log.Printf("item: %v", item)
+	// item := map[string]interface{}{}
+	// // err := json.Unmarshal([]byte(itemStr), &item)
+	// err := jsonUnmarshal([]byte(itemStr), &item)
+	// if err != nil {
+	// 	log.Printf("json.Unmarshal item error: %v", err)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
+	// log.Printf("item: %v", item)
 
-	// 根据super_vote_id查找voteInfo
-	// supervoteid := strconv.FormatUint(uint64(item["super_vote_id"].(float64)), 10)
-	supervoteidNumber, _ := item["super_vote_id"].(json.Number).Int64()
-	supervoteid := strconv.FormatUint(uint64(supervoteidNumber), 10)
-	log.Printf("supervoteid: %v", supervoteid)
-	var voteInfo *VoteInfo
-	for _, info := range gVoteInfosPrepare {
-		if info.Supervoteid == supervoteid {
-			voteInfo = info
-			break
-		}
-	}
+	// // 根据super_vote_id查找voteInfo
+	// // supervoteid := strconv.FormatUint(uint64(item["super_vote_id"].(float64)), 10)
+	// supervoteidNumber, _ := item["super_vote_id"].(json.Number).Int64()
+	// supervoteid := strconv.FormatUint(uint64(supervoteidNumber), 10)
+	// log.Printf("supervoteid: %v", supervoteid)
+	// // var voteInfo *VoteInfo
+	// // for _, info := range gVoteInfosPrepare {
+	// // 	if info.Supervoteid == supervoteid {
+	// // 		voteInfo = info
+	// // 		break
+	// // 	}
+	// // }
+	// voteInfo, err := QueryVoteInfoBySuperVoteId(supervoteid)
+	// if err != nil {
+	// 	log.Printf("QueryVoteInfoBySuperVoteId(%s) error: %v", supervoteid, err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	if voteInfo == nil {
-		log.Printf("voteInfo not found for super_vote_id: %v", supervoteid)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	// if voteInfo == nil {
+	// 	log.Printf("voteInfo not found for super_vote_id: %v", supervoteid)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
 
-	voteInfo.Item = item
+	// voteInfo.Item = item
 	w.Write([]byte("{}"))
 }
 
@@ -196,22 +203,47 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	superVoteId := r.FormValue("super_vote_id")
-	if superVoteId == "" {
-		log.Printf("super_vote_id is empty")
+	// info
+	infoStr := r.FormValue("info")
+	if infoStr == "" {
+		log.Printf("info is empty")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	info := map[string]interface{}{}
+	err := json.Unmarshal([]byte(infoStr), &info)
+	if err != nil {
+		log.Printf("json.Unmarshal info error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("info: %v", info)
 
+	// item
+	itemStr := r.FormValue("item")
+	if itemStr == "" {
+		log.Printf("item is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	item := map[string]interface{}{}
+	err = json.Unmarshal([]byte(itemStr), &item)
+	if err != nil {
+		log.Printf("json.Unmarshal item error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("item: %v", item)
+
+	// task
 	taskStr := r.FormValue("task")
 	if taskStr == "" {
 		log.Printf("task is empty")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	task := map[string]interface{}{}
-	err := json.Unmarshal([]byte(taskStr), &task)
+	err = json.Unmarshal([]byte(taskStr), &task)
 	if err != nil {
 		log.Printf("json.Unmarshal task error: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -219,27 +251,41 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("task: %v", task)
 
+	voteInfo := &VoteInfo{
+		Info:  info,
+		Item:  item,
+		User:  user.UserName,
+		Votes: uint64(task["votes"].(float64)),
+		Speed: uint64(task["votespermin"].(float64)),
+	}
 	// 根据super_vote_id查找voteInfo
-	var voteInfo *VoteInfo
-	for _, info := range gVoteInfosPrepare {
-		log.Printf("info.Supervoteid: %v", info.Supervoteid)
-		if info.Supervoteid == superVoteId {
-			voteInfo = info
-			break
-		}
-	}
+	// var voteInfo *VoteInfo
+	// for _, info := range gVoteInfosPrepare {
+	// 	log.Printf("info.Supervoteid: %v", info.Supervoteid)
+	// 	if info.Supervoteid == superVoteId {
+	// 		voteInfo = info
+	// 		break
+	// 	}
+	// }
+	// voteInfo, err := QueryVoteInfoBySuperVoteId(superVoteId)
+	// if err != nil {
+	// 	log.Printf("QueryVoteInfoBySuperVoteId(%s) error: %v", superVoteId, err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	if voteInfo == nil {
-		log.Printf("voteInfo not found for super_vote_id: %v", superVoteId)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	// if voteInfo == nil {
+	// 	log.Printf("voteInfo not found for super_vote_id: %v", superVoteId)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
 
-	voteInfo.User = user.UserName
-	voteInfo.Votes = uint64(task["votes"].(float64))
-	voteInfo.Speed = uint64(task["votespermin"].(float64))
+	// voteInfo.User = user.UserName
+	// voteInfo.Votes = uint64(task["votes"].(float64))
+	// voteInfo.Speed = uint64(task["votespermin"].(float64))
 
 	// 写到数据库中
+	// err = voteInfo.Submit()
 	err = voteInfo.Insert()
 	if err != nil {
 		log.Printf("voteinfo.insert error: %v", err)
@@ -249,7 +295,8 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 
 	// 需要把voteinfo从prepare放在voting中
-	delete(gVoteInfosPrepare, voteInfo.Key)
+	// delete(gVoteInfosPrepare, voteInfo.Key)
+	voteInfo.SetStatus("doing")
 	// gVoteInfos.Set(voteInfo.Key, voteInfo)
 
 	// 处理任务
