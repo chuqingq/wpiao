@@ -232,13 +232,20 @@ func QueryVoteInfoBySuperVoteId(supervoteid string) (*VoteInfo, error) {
 }
 
 func (vi *VoteInfo) IncrVotes() error {
-	vi.CurVotes += 1
-	if vi.CurVotes >= vi.Votes {
-		vi.Status = "finished"
+	err := MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$incr": bson.M{"curvotes": 1}})
+	if err != nil {
+		log.Printf("mgoupdate incr curvotes error: %v", err)
+		return err
 	}
 
-	// TODO 目前都是按key唯一的，后续需要按id
-	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
+	vi.CurVotes += 1
+	if vi.CurVotes < vi.Votes {
+		return nil
+	}
+
+	vi.Status = "finished"
+	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": "finished"}})
+	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }
 
 func (vi *VoteInfo) SetStatus(status string) error {
