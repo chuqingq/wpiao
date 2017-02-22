@@ -79,7 +79,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 	return u
 }
 
-// 返回nil说明check失败，已写入响应
+// 如果返回nil说明check失败，后续会判断用户名密码，因此这里不写入响应
 func checkCookie(w http.ResponseWriter, r *http.Request) *User {
 	log.Printf("checkCookie: ")
 
@@ -89,14 +89,14 @@ func checkCookie(w http.ResponseWriter, r *http.Request) *User {
 	timestampCookie, timestampCookieErr := r.Cookie("wp_timestamp")
 	if usernameCookieErr != nil || passwordCookieErr != nil || timestampCookieErr != nil {
 		log.Printf("get cookie error")
-		w.Write([]byte(`{"ret":403,"msg":"cookie is invalid"}`))
+		// w.Write([]byte(`{"ret":403,"msg":"cookie is invalid"}`))
 		return nil
 	}
 
 	u := check(usernameCookie.Value, passwordCookie.Value, timestampCookie.Value)
 	if u == nil {
 		log.Printf("check error")
-		w.Write([]byte(`{"ret":403,"msg":"check cookie error"}`))
+		// w.Write([]byte(`{"ret":403,"msg":"check cookie error"}`))
 		return nil
 	}
 
