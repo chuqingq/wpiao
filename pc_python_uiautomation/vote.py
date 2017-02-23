@@ -24,6 +24,7 @@ def log(str):
 def createDict():
     console = uiautomation.GetConsoleWindow()
     global nextHandleKey
+    global handleDict
     index = 0
     handleDict.clear()
     while True:
@@ -81,6 +82,7 @@ def vote(url, count):
     '''投票'''
     global nextVoteIndex
     global voteIngFlag
+    global handleDict
     log('vote() begin...')
     voteIngFlag = True
     console = uiautomation.GetConsoleWindow()
@@ -93,12 +95,12 @@ def vote(url, count):
         window = uiautomation.ControlFromHandle(handleDict[nextVoteIndex])
         if window == None:
             log('Error: window not exist ' + str(nextVoteIndex) + ' ' + str(handleDict[nextVoteIndex]) + ', so pop it')
-            handleDict.pop(nextVoteIndex)
             log('pop: ' + str(nextVoteIndex) + ' ' + str(handleDict[nextVoteIndex]))
+            handleDict.pop(nextVoteIndex)
             nextVoteIndex += 1
         else:
             window.ShowWindow(uiautomation.ShowWindow.Maximize)
-            window.SetActive(waitTime=0)
+            window.SetActive()
             # # 点击搜索
             # uiautomation.Win32API.MouseClick(126, 24)
             # # 输入“文件传输助手”
