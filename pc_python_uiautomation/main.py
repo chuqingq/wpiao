@@ -48,15 +48,16 @@ def start_websocket():
     ws.on_open = on_open
     ws.run_forever()
 
-print('start_websocket...')
-t = threading.Thread(target=start_websocket, args=())
-t.start()
+# print('start_websocket...')
+# t = threading.Thread(target=start_websocket, args=())
+# t.start()
 
-# if __name__ == "__main__":
-#     websocket.enableTrace(True)
-#     ws = websocket.WebSocketApp("ws://127.0.0.1:8080/api/ws/pc",
-#                               on_message = on_message,
-#                               on_error = on_error,
-#                               on_close = on_close)
-#     ws.on_open = on_open
-#     ws.run_forever()
+if __name__ == "__main__":
+    # websocket.enableTrace(True)
+    # ws = websocket.WebSocketApp("ws://127.0.0.1:8080/api/ws/pc",
+    #                           on_message = on_message,
+    #                           on_error = on_error,
+    #                           on_close = on_close)
+    # ws.on_open = on_open
+    # ws.run_forever()
+    start_websocket()
