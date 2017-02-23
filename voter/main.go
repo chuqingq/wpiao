@@ -283,7 +283,7 @@ func WsPC(w http.ResponseWriter, r *http.Request) {
 
 // browser把url发过来
 func PCVote(w http.ResponseWriter, r *http.Request) {
-	log.Printf("PCVote:")
+	log.Printf("/api/vote:")
 
 	voteUrl := r.FormValue("url")
 	if voteUrl == "" {
