@@ -9,15 +9,126 @@ import uiautomation
 #     'clicks': [(12, 363, 336), (17, 364, 321), (23, 366, 511), (28, 665, 249)]
 # }
 
+# jonty add for dict
+nextHandleKey = 0
+handleDict = {}
+# state of vote, default is False
+voteIngFlag = False
+# for vote order
+nextVoteIndex = 0
 
 def log(str):
     print(time.strftime('%Y-%m-%d %H:%M:%S') + ': ' + str)
 
+# create dict
+def createDict():
+    console = uiautomation.GetConsoleWindow()
+    global nextHandleKey
+    index = 0
+    handleDict.clear()
+    while True:
+        window = uiautomation.WindowControl(searchDepth=1,  ClassName='WeChatMainWndForPC', SubName=u'微信')
+        if not window.Exists(0):
+            log('please open windown first')
+            return
+        window.ShowWindow(uiautomation.ShowWindow.Maximize)
+        #window.SetActive()
+        curHandle = window.Handle
+        if curHandle in handleDict.values():
+            break
+        else :
+            handleDict[index] = curHandle
+            log(str(index) + ' ' + str(curHandle))
+            index += 1
+        window.SendKeys('{ALT}{ESC}')
+    console.SetActive()
+    nextHandleKey = index
+    log('dice is created: len=' + str(len(handleDict)) + ' nextHandleKey='+str(nextHandleKey))
+
+# refresh dict
+def refreshDict():
+    console = uiautomation.GetConsoleWindow()
+    # new handle
+    global nextHandleKey
+    log('nextHandleKey = ' + str(nextHandleKey))
+    begHandle = 0
+    while True:
+        window = uiautomation.WindowControl(searchDepth=1,  ClassName='WeChatMainWndForPC', SubName=u'微信')
+        window.ShowWindow(uiautomation.ShowWindow.Maximize)
+        #window.SetActive()
+        curHandle = window.Handle
+        if begHandle == 0 :
+            begHandle = curHandle
+        elif begHandle == curHandle :
+            break
+        if curHandle not in handleDict.values():
+            handleDict[nextHandleKey] = curHandle
+            log('add: ' + str(nextHandleKey) + ' ' + str(curHandle))
+            nextHandleKey += 1
+        window.SendKeys('{ALT}{ESC}')
+    console.SetActive()
+    # invalid handle
+    keyList = handleDict.copy().keys()
+    for index in keyList:
+        curHandle = handleDict[index]
+        window = uiautomation.ControlFromHandle(curHandle)
+        if window == None:
+            handleDict.pop(index)
+            log('pop: ' + str(index) + ' ' + str(curHandle))
+    log('dice is refreshed: len=' + str(len(handleDict)) + ' nextHandleKey='+str(nextHandleKey))
 
 def vote(url, count):
     '''投票'''
+    global nextVoteIndex
+    global voteIngFlag
     log('vote() begin...')
-    # console = uiautomation.GetConsoleWindow()
+    voteIngFlag = True
+    console = uiautomation.GetConsoleWindow()
+    while count > 0:
+        if nextVoteIndex >= nextHandleKey:
+            nextVoteIndex = 0
+        if nextVoteIndex not in handleDict.keys():
+            nextVoteIndex += 1
+            continue
+        window = uiautomation.ControlFromHandle(handleDict[nextVoteIndex])
+        if window == None:
+            log('Error: window not exist ' + str(nextVoteIndex) + ' ' + str(handleDict[nextVoteIndex]) + ', so pop it')
+            handleDict.pop(nextVoteIndex)
+            log('pop: ' + str(nextVoteIndex) + ' ' + str(handleDict[nextVoteIndex]))
+            nextVoteIndex += 1
+        else:
+            window.ShowWindow(uiautomation.ShowWindow.Maximize)
+            window.SetActive(waitTime=0)
+            # # 点击搜索
+            # uiautomation.Win32API.MouseClick(126, 24)
+            # # 输入“文件传输助手”
+            # window.SendKeys(u'文件传输助手')
+            # # 点击联系人
+            # uiautomation.Win32API.MouseClick(147, 88)
+
+            # 直接点击第一个联系人
+            uiautomation.Win32API.MouseClick(136, 73)
+            log('click')
+            # 输入url
+            window.SendKeys(4 * (url + ' ') + '{Enter}', 0, 0)
+            # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方），弹出webview或浏览器
+            uiautomation.Win32API.MouseClick(591, 346)
+            # 做投票动作
+            # dovote3(window)
+            # TODO 等待并截图，或者判断是否成功
+            count -= 1
+            # 窗口放到最后
+            window.SendKeys('{ALT}{ESC}')
+            log('vote end window: ' + str(handleDict[nextVoteIndex]))
+            nextVoteIndex += 1
+    console.SetActive()
+    voteIngFlag = False
+    log('vote() end...')
+
+def voteOld(url, count):
+    '''投票'''
+    log('vote() begin...')
+    console = uiautomation.GetConsoleWindow()
 
     while count > 0:
         window = uiautomation.WindowControl(searchDepth=1, ClassName='WeChatMainWndForPC', SubName=u'微信')
@@ -25,7 +136,7 @@ def vote(url, count):
         # window.ShowWindow(uiautomation.ShowWindow.Maximize)
         # window.ShowWindow(uiautomation.ShowWindow.Restore)
         # window.MoveWindow(0,0,850,590)
-        window.SetActive(waitTime=2)
+        window.SetActive(waitTime=0)
         log('setactive')
 
         # # 点击搜索
@@ -39,10 +150,9 @@ def vote(url, count):
         uiautomation.Win32API.MouseClick(136, 73)
         log('click')
         # 输入url
-        window.SendKeys(1 * (url + ' ') + '{Enter}', 0, 0)
+        window.SendKeys(4 * (url + ' ') + '{Enter}', 0, 0)
         # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方），弹出webview或浏览器
-        # uiautomation.Win32API.MouseClick(591, 346)
-        uiautomation.Win32API.MouseClick(1670, 819)
+        uiautomation.Win32API.MouseClick(591, 346)
 
         # 做投票动作
         # dovote3(window)
@@ -53,7 +163,7 @@ def vote(url, count):
         # 窗口放到最后
         window.SendKeys('{ALT}{ESC}')
         log('vote end window: {0}'.format(window.Handle))
-    # console.SetActive()
+    console.SetActive()
     log('vote() end...')
 
 
@@ -113,8 +223,101 @@ def bench(count=30):
 #     # w.SendKeys('{Ctrl}w', 0,0)
 #     pass
 
+def color():
+    console = uiautomation.GetConsoleWindow()
+    index = 0
+    while True:
+        if voteIngFlag:
+            log('voteIngFlag ...')
+            time.sleep(6)
+            continue
+        if index >= nextHandleKey:
+            break
+        if index not in handleDict.keys():
+            index += 1
+            continue
+        window = uiautomation.ControlFromHandle(handleDict[index])
+        if window == None:
+            log('Error: window not exist ' + str(index) + ' ' + str(handleDict[index]) + ', so pop it')
+            handleDict.pop(index)
+            log('pop: ' + str(index) + ' ' + str(curHandle))
+            index += 1
+        else:
+            window.ShowWindow(uiautomation.ShowWindow.Maximize)
+            window.SetActive()
+            log('train begin: ' + str(handleDict[index]) + ' ' + str(index))
+            # 直接点击第1个联系人
+            time.sleep(3)
+            log('...: ')
+            uiautomation.Win32API.MouseClick(136, 73)
+            print(uiautomation.Win32API.GetPixelColor(136,73,handleDict[index]))
+            # 直接点击第2个联系人
+            time.sleep(3)
+            log('...: ')
+            uiautomation.Win32API.MouseClick(136, 129)
+            print(uiautomation.Win32API.GetPixelColor(136,129,handleDict[index]))
+            # 收尾窗口放到最后
+            index += 1
+            window.SendKeys('{ALT}{ESC}')
+            log('train end window ' + str(handleDict[index]) + ' \n')
+            log('end\n')
+            time.sleep(10)
+    console.SetActive()
+    log('>>>> train() end...')
 
+# train with handle order by dict-key
 def train():
+    log('>>>> train() begin...')
+    console = uiautomation.GetConsoleWindow()
+    index = 0
+    while True:
+        if voteIngFlag:
+            time.sleep(600)
+            continue
+        if index >= nextHandleKey:
+            index = 0
+        if index not in handleDict.keys():
+            index += 1
+            continue
+        window = uiautomation.ControlFromHandle(handleDict[index])
+        if window == None:
+            log('Error: window not exist ' + str(index) + ' ' + str(handleDict[index]) + ', so pop it')
+            handleDict.pop(index)
+            log('pop: ' + str(index) + ' ' + str(curHandle))
+            index += 1
+        else:
+            window.ShowWindow(uiautomation.ShowWindow.Maximize)
+            window.SetActive()
+            log('train begin: ' + str(handleDict[index]) + ' ' + str(index))
+            # 直接点击第1个联系人
+            time.sleep(3)
+            uiautomation.Win32API.MouseClick(136, 73)
+            # window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好想是个A风筝的线条固阳A.{Enter}')
+            # 直接点击第2个联系人
+            time.sleep(3)
+            uiautomation.Win32API.MouseClick(136, 129)
+            # window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好想是个B风筝的线条固阳B.{Enter}')
+            # 直接点击第3个联系人
+            time.sleep(3)
+            uiautomation.Win32API.MouseClick(136, 181)
+            # window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好想是个C风筝的线条固阳C.{Enter}')
+            # 直接点击第4个联系人
+            time.sleep(3)
+            uiautomation.Win32API.MouseClick(136, 245)
+            # window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好想是个D风筝的线条固阳D.{Enter}')
+            # 直接点击第5个联系人
+            time.sleep(3)
+            uiautomation.Win32API.MouseClick(136, 317)
+            # window.SendKeys(time.strftime('%Y-%m-%d %H:%M:%S')+' 你好想是个E风筝的线条固阳E.{Enter}')
+            # 收尾窗口放到最后
+            window.SendKeys('{ALT}{ESC}')
+            log('train end ' + str(handleDict[index]) + ' \n')
+            index += 1
+            time.sleep(300) #1776
+    console.SetActive()
+    log('>>>> train() end...')
+ 
+def trainOld():
     '''养号'''
     log('>>>> train() begin...')
     console = uiautomation.GetConsoleWindow()
@@ -214,4 +417,5 @@ def record(url):
     }
     print('action: ')
     print(action)
-
+    
+createDict()
