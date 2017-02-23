@@ -149,6 +149,9 @@ func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 		return nil, err
 	}
 
+	// 保存key，传到前端。后面下发任务时再传回来
+	vi.Info["key"] = vi.Key
+
 	return vi, nil
 }
 

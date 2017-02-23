@@ -177,6 +177,11 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("info: %v", info)
 
+	// 取出key
+	key := info["key"].(string)
+	log.Printf("key: %v", key)
+	delete(info, "key")
+
 	// item
 	itemStr := r.FormValue("item")
 	if itemStr == "" {
@@ -210,8 +215,9 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	log.Printf("task: %v", task)
 
 	voteInfo := &VoteInfo{
-		Url:    voteUrl,
-		Key:    GetKeyFromUrl(voteUrl),
+		Url: voteUrl,
+		// Key:    GetKeyFromUrl(voteUrl),
+		Key:    key,
 		Info:   info,
 		Item:   item,
 		User:   user.UserName,
