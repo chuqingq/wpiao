@@ -29,12 +29,13 @@ func (vis VoteInfos) Del(key string) {
 }
 
 type VoteInfo struct {
+	Id          bson.ObjectId          `bson:"_id"` 
 	Key         string                 `bson:"key"`    // 可以唯一标识一个投票的 TODO
 	Status      string                 `bson:"status"` // 任务状态：prepare,doing,finished
 	Url         string                 `bson:"url"`    // 短URL
 	Supervoteid string                 `bson:"supervoteid"`
 	Info        map[string]interface{} `bson:"info"`  // 投票信息。包括活动标题、到期时间、投票对象等
-	Item        map[string]interface{} `bson:"item"`  // 投的对象
+	Item        string                 `bson:"item"` // Item        map[string]interface{} `bson:"item"`  // 投的对象
 	User        string                 `bson:"user"`  // 下发任务的用户名
 	Votes       uint64                 `bson:"votes"` // 票数
 	Speed       uint64                 `bson:"speed"` // TODO 暂未使用。每分钟的票数
@@ -206,7 +207,7 @@ func QueryVoteInfosByUser(username string) ([]*VoteInfo, error) {
 
 func QueryVoteInfoByKey(key string) (*VoteInfo, error) {
 	var voteinfo []*VoteInfo
-	err := MgoFind("weipiao", "task", bson.M{"key": key}, &voteinfo)
+	err := MgoFind("weipiao", "task", bson.M{"key": key, "status": "doing"}, &voteinfo)
 	if err != nil {
 		log.Printf("MgoFind(task) error: %v", err)
 		return nil, err
@@ -216,7 +217,12 @@ func QueryVoteInfoByKey(key string) (*VoteInfo, error) {
 		return nil, errors.New("voteinfo not found: key: " + key)
 	}
 
-	return voteinfo[0], nil
+	vi := voteinfo[0]
+
+	// 领任务时票数+1。后面如果投失败，则-1
+	vi.IncrVotes()
+
+	return vi, nil
 }
 
 func QueryVoteInfoBySuperVoteId(supervoteid string) (*VoteInfo, error) {
@@ -235,7 +241,8 @@ func QueryVoteInfoBySuperVoteId(supervoteid string) (*VoteInfo, error) {
 }
 
 func (vi *VoteInfo) IncrVotes() error {
-	err := MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$incr": bson.M{"curvotes": 1}})
+	log.Printf("vi.IncrVotes")
+	err := MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$inc": bson.M{"curvotes": 1}})
 	if err != nil {
 		log.Printf("mgoupdate incr curvotes error: %v", err)
 		return err
@@ -246,8 +253,28 @@ func (vi *VoteInfo) IncrVotes() error {
 		return nil
 	}
 
-	vi.Status = "finished"
-	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": "finished"}})
+	vi.Status = "success"
+	log.Printf("task success: %v", vi.Id)
+	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
+	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
+}
+
+func (vi *VoteInfo) DecrVotes() error {
+	log.Printf("vi.DecrVotes")
+	err := MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$inc": bson.M{"curvotes": -1}})
+	if err != nil {
+		log.Printf("mgoupdate decr curvotes error: %v", err)
+		return err
+	}
+
+	vi.CurVotes -= 1
+	if vi.CurVotes >= vi.Votes {
+		return nil
+	}
+
+	vi.Status = "doing"
+	log.Printf("task doing: %v", vi.Id)
+	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }
 

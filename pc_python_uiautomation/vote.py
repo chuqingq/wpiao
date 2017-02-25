@@ -112,9 +112,9 @@ def vote(url, count):
             uiautomation.Win32API.MouseClick(136, 73)
             log('click')
             # 输入url
-            window.SendKeys(4 * (url + ' ') + '{Enter}', 0, 0)
+            window.SendKeys(40 * '{Ctrl}{Enter}' + 4 * (url + ' ') + '{Enter}', 0, 0)
             # 点击输入框的上面一行文字（要求刚输入的文字就贴在输入框上方），弹出webview或浏览器
-            uiautomation.Win32API.MouseClick(591, 346)
+            uiautomation.Win32API.MouseClick(1661, 817)
             # 做投票动作
             # dovote3(window)
             # TODO 等待并截图，或者判断是否成功

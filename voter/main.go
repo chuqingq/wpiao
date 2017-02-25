@@ -7,6 +7,7 @@ import (
 	// "strconv"
 
 	"github.com/gorilla/websocket"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const SHORT_URL = "http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w"
@@ -169,7 +170,8 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	info := map[string]interface{}{}
-	err := json.Unmarshal([]byte(infoStr), &info)
+	// err := json.Unmarshal([]byte(infoStr), &info)
+	err := jsonUnmarshal([]byte(infoStr), &info)
 	if err != nil {
 		log.Printf("json.Unmarshal info error: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -189,14 +191,16 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	item := map[string]interface{}{}
-	err = json.Unmarshal([]byte(itemStr), &item)
-	if err != nil {
-		log.Printf("json.Unmarshal item error: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	log.Printf("item: %v", item)
+	// item := map[string]interface{}{}
+	// // err = json.Unmarshal([]byte(itemStr), &item)
+	// err = jsonUnmarshal([]byte(itemStr), &item)
+	// if err != nil {
+	// 	log.Printf("json.Unmarshal item error: %v", err)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
+	// log.Printf("item: %v", item)
+	log.Printf("itemStr: %v", itemStr)
 
 	// task
 	taskStr := r.FormValue("task")
@@ -206,7 +210,8 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	task := map[string]interface{}{}
-	err = json.Unmarshal([]byte(taskStr), &task)
+	// err = json.Unmarshal([]byte(taskStr), &task)
+	err = jsonUnmarshal([]byte(taskStr), &task)
 	if err != nil {
 		log.Printf("json.Unmarshal task error: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -214,15 +219,20 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("task: %v", task)
 
+	votes, _ := task["votes"].(json.Number).Int64()
+	speed, _ := task["votespermin"].(json.Number).Int64()
+
 	voteInfo := &VoteInfo{
+		Id: bson.NewObjectId(),
 		Url: voteUrl,
 		// Key:    GetKeyFromUrl(voteUrl),
 		Key:    key,
 		Info:   info,
-		Item:   item,
+		// Item:   item,
+		Item:   itemStr,
 		User:   user.UserName,
-		Votes:  uint64(task["votes"].(float64)),
-		Speed:  uint64(task["votespermin"].(float64)),
+		Votes:  uint64(votes),
+		Speed:  uint64(speed),
 		Status: "doing",
 	}
 
@@ -306,6 +316,9 @@ func PCVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 先回响应
+	w.WriteHeader(http.StatusOK)
+
 	voteInfo, err := QueryVoteInfoByKey(key)
 	if err != nil {
 		log.Printf("QueryVoteInfoByKey(%s) error: %v", key, err)
@@ -320,8 +333,15 @@ func PCVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	voter.Vote()
-	w.WriteHeader(http.StatusOK)
+	// log.Printf("type of item: %T", voteInfo.Item["super_vote_id"])
+
+	err = voter.Vote()
+	if err != nil {
+		log.Printf("vote error: %v", err)
+		// 如果投票失败，则票数-1
+		voteInfo.DecrVotes()
+	}
+
 	return
 }
 

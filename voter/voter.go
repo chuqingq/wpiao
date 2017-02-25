@@ -37,9 +37,7 @@ func (v *Voter) Vote() error {
 		return err
 	}
 
-	// 增加voteInfo的计数
-	// v.Info.CurVotes += 1
-	v.Info.IncrVotes()
+	// main中根据vote结果确定是否要票数-1
 	return nil
 }
 
@@ -90,12 +88,13 @@ func (v *Voter) newappmsgvoteVote() error {
 	v.values.Set("action", "vote")
 	v.values.Set("f", "json")
 	// v.values.Set("json", v.item)
-	item, err := json.Marshal(v.Info.Item)
-	if err != nil {
-		log.Printf("json.Marshal item error: %v", err)
-		return err
-	}
-	v.values.Set("json", string(item))
+	// item, err := json.Marshal(v.Info.Item)
+	// if err != nil {
+	// 	log.Printf("json.Marshal item error: %v", err)
+	// 	return err
+	// }
+	// v.values.Set("json", string(item))
+	v.values.Set("json", v.Info.Item)
 	log.Printf("vote values: %v", v.values)
 	log.Printf("newappmsgvoteVote formdata: %v", v.values.Encode())
 
