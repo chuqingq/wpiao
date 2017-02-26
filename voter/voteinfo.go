@@ -34,12 +34,13 @@ type VoteInfo struct {
 	Status      string                 `bson:"status"` // 任务状态：prepare,doing,finished
 	Url         string                 `bson:"url"`    // 短URL
 	Supervoteid string                 `bson:"supervoteid"`
-	Info        map[string]interface{} `bson:"info"`  // 投票信息。包括活动标题、到期时间、投票对象等
-	Item        string                 `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
-	User        string                 `bson:"user"`  // 下发任务的用户名
-	Votes       uint64                 `bson:"votes"` // 票数
-	Speed       uint64                 `bson:"speed"` // TODO 暂未使用。每分钟的票数
-	CurVotes    uint64                 `bson:"curvotes"`
+	Info        map[string]interface{} `bson:"info"` // 投票信息。包括活动标题、到期时间、投票对象等
+	// Info     string `bson:"info"`
+	Item     string `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
+	User     string `bson:"user"`  // 下发任务的用户名
+	Votes    uint64 `bson:"votes"` // 票数
+	Speed    uint64 `bson:"speed"` // TODO 暂未使用。每分钟的票数
+	CurVotes uint64 `bson:"curvotes"`
 }
 
 func GetKeyFromUrl(voteUrl string) string {
@@ -152,13 +153,13 @@ func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 	}
 
 	// TODO 保存key，传到前端。后面下发任务时再传回来
-	vi.Info["key"] = vi.Key
+	// vi.Info["key"] = vi.Key
 
 	return vi, nil
 }
 
 func (vi *VoteInfo) NewVoter(voteUrl string) (*Voter, error) {
-	log.Printf("NewVoter voteUrl: %v", voteUrl)
+	log.Printf("NewVoter():")
 	voteUrl = strings.Replace(voteUrl, "https:", "http:", 1)
 
 	// 设置cookiejar
@@ -215,7 +216,7 @@ func QueryVoteInfoByKey(key string) (*VoteInfo, error) {
 	}
 
 	if len(voteinfo) == 0 {
-		return nil, errors.New("voteinfo not found: key: " + key)
+		return nil, errors.New("voteinfo not found by key")
 	}
 
 	vi := voteinfo[0]
@@ -255,7 +256,7 @@ func (vi *VoteInfo) IncrVotes() error {
 	}
 
 	vi.Status = "success"
-	log.Printf("task success: %v", vi.Id)
+	log.Printf("task status: success, %v", vi.Id)
 	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }
@@ -274,7 +275,7 @@ func (vi *VoteInfo) DecrVotes() error {
 	}
 
 	vi.Status = "doing"
-	log.Printf("task doing: %v", vi.Id)
+	log.Printf("task status: doing, %v", vi.Id)
 	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }

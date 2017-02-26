@@ -283,6 +283,7 @@
 
             step: 'parseurl', // 当前第二级步骤：parseurl、submititem、submittask
             url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
+            key: '',
             voteinfo: voteInfo, // 投票信息，最初是null
             voteitem: null, // 投票对象
             task: {}, // 主备下发的任务
@@ -341,7 +342,8 @@
               $.getJSON(url, function(data, status) {
                 console.log('voteinfo='+JSON.stringify(data));
                 vm.checklogin(data);
-                vm.$set(vm,'voteinfo', data);
+                vm.$set(vm, 'voteinfo', data.info);
+                vm.$set(vm, 'key', data.key);
                 vm.step = 'selectvote';
                 // Vue.set(vm.data, 'voteinfo', 2)
                 // vm.voteinfo.expire_time+=10000000
@@ -399,6 +401,7 @@
               var vm = this;
               // var url = '/api/submittask?super_vote_id='+this.voteitem.super_vote_id+'&task='+JSON.stringify(this.task);
               var url = '/api/submittask?url='+encodeURIComponent(this.url)
+                +'&key='+encodeURIComponent(this.key)
                 +'&info='+encodeURIComponent(JSON.stringify(this.voteinfo))
                 +'&item='+encodeURIComponent(JSON.stringify(this.voteitem))
                 +'&task='+encodeURIComponent(JSON.stringify(this.task));

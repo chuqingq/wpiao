@@ -123,7 +123,11 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 	}
 	// log.Printf("voteInfo: %+v", voteInfo)
 
-	infoBytes, err := json.Marshal(voteInfo.Info)
+	// infoBytes, err := json.Marshal(voteInfo.Info)
+	info := map[string]interface{}{}
+	info["key"] = voteInfo.Key
+	info["info"] = voteInfo.Info
+	infoBytes, err := json.Marshal(info)
 	if err != nil {
 		log.Printf("marshal info error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -161,6 +165,7 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	log.Printf("voteUrl: %v", voteUrl)
 
 	// info
 	infoStr := r.FormValue("info")
@@ -177,10 +182,11 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Printf("info: %v", info)
+	log.Printf("info: %v", string(infoStr[:60]))
 
 	// 取出key
-	key := info["key"].(string)
+	// key := info["key"].(string)
+	key := r.FormValue("key")
 	log.Printf("key: %v", key)
 	delete(info, "key")
 
@@ -321,7 +327,7 @@ func PCVote(w http.ResponseWriter, r *http.Request) {
 
 	voteInfo, err := QueryVoteInfoByKey(key)
 	if err != nil {
-		log.Printf("QueryVoteInfoByKey(%s) error: %v", key, err)
+		log.Printf("QueryVoteInfoByKey error: %v,%v", key, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

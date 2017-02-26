@@ -33,7 +33,7 @@ func (v *Voter) Vote() error {
 
 	err = v.newappmsgvoteVote()
 	if err != nil {
-		log.Printf("newappmsgvoteVote error: %v", err)
+		// log.Printf("newappmsgvoteVote error: %v", err)
 		return err
 	}
 
@@ -100,25 +100,25 @@ func (v *Voter) newappmsgvoteVote() error {
 
 	res, err := v.client.PostForm("https://mp.weixin.qq.com/mp/newappmsgvote", v.values)
 	if err != nil {
-		log.Printf("newappmsgvoteVote error: %v", err)
+		log.Printf("newappmsgvoteVote postform error: %v", err)
 		return err
 	}
 	defer res.Body.Close()
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("read resBody error: %v", err)
+		log.Printf("newappmsgvoteVote read resBody error: %v", err)
 		return err
 	}
-	log.Printf("resBody: %v", string(resBody))
+	// log.Printf("resBody: %v", string(resBody))
 
 	resData := map[string]interface{}{}
 
 	err = jsonUnmarshal(resBody, &resData)
 	if err != nil || resData["base_resp"].(map[string]interface{})["ret"].(json.Number).String() != "0" {
 		// 也是一种错误场景
-		log.Printf("vote error: %v", string(resBody))
-		return errors.New("vote error: vote response is invalid: " + string(resBody))
+		log.Printf("newappmsgvoteVote: resBody is invalid: %v", string(resBody))
+		return errors.New("newappmsgvoteVote: resBody is invalid: " + string(resBody))
 	}
 
 	return nil
