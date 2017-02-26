@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -66,7 +67,11 @@ func (v *Voter) s() error {
 }
 
 func (v *Voter) newappmsgvoteShow() error {
-	v.values.Set("supervoteid", v.Info.Supervoteid)
+	// vi.supervoteid没有保存，因此需要从info中获取出supervoteid
+	supervoteid := v.Info.Info["super_vote_id"].(int64)
+
+	// 补齐参数
+	v.values.Set("supervoteid", fmt.Sprintf("%v", supervoteid))
 	v.values.Set("action", "show")
 	log.Printf("newappmsgvoteShow values: %+v", v.values)
 
@@ -78,17 +83,16 @@ func (v *Voter) newappmsgvoteShow() error {
 	}
 	defer res.Body.Close()
 
-	// 这里不需要做什么，supervoteid是之前就有的
-	// TODO 判断这个URL是否已经投过票。如果已投过，再投也会成功，因此需要在这里提前判断
+	// 判断这个URL是否已经投过票。如果已投过，再投也会成功，因此需要在这里提前判断
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Printf("newappmsgvoteShow read body error: %v", err)
 		return err
 	}
-	log.Printf("newappmsgvoteShow resBody: %v", string(resBody))
+	// log.Printf("newappmsgvoteShow resBody: %v", string(resBody))
 	if bytes.Contains(resBody, []byte(`"selected":true`)) {
-		log.Printf("newappmsgvoteShow already has vote")
-		return errors.New("newappmsgvoteShow already has vote")
+		log.Printf("newappmsgvoteShow error: 您已投票")
+		return errors.New("newappmsgvoteShow error: 您已投票")
 	}
 
 	return nil
@@ -125,18 +129,29 @@ func (v *Voter) newappmsgvoteVote() error {
 		log.Printf("newappmsgvoteVote read resBody error: %v", err)
 		return err
 	}
-	// log.Printf("resBody: %v", string(resBody))
+	log.Printf("resBody: %v", string(resBody))
 
 	resData := map[string]interface{}{}
 
 	err = jsonUnmarshal(resBody, &resData)
-	if err != nil || resData["base_resp"].(map[string]interface{})["ret"].(json.Number).String() != "0" {
-		// 也是一种错误场景
-		log.Printf("newappmsgvoteVote: resBody is invalid: %v", string(resBody))
-		return errors.New("newappmsgvoteVote: resBody is invalid: " + string(resBody))
+	if err != nil {
+		log.Printf("newappmsgvoteVote jsonUnmarshal resBody error: %v", err)
+		return errors.New("newappmsgvoteVote jsonUnmarshal resBody error")
 	}
 
-	return nil
+	retStr := resData["base_resp"].(map[string]interface{})["ret"].(json.Number).String()
+	if retStr == "0" {
+		return nil
+	} else if retStr == "-7" {
+		log.Printf("newappmsgvoteVote vote error: 关注公众号后才可以投票")
+		return errors.New("newappmsgvoteVote vote error: 关注公众号后才可以投票")
+	} else if retStr == "-6" {
+		log.Printf("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
+		return errors.New("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
+	} else {
+		log.Printf("newappmsgvoteVote vote error: 投票失败: " + retStr)
+		return errors.New("newappmsgvoteVote vote error: 投票失败: " + retStr)
+	}
 }
 
 func getByBound(b, left, right []byte) []byte {
