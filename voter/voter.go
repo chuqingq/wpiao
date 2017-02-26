@@ -66,6 +66,10 @@ func (v *Voter) s() error {
 }
 
 func (v *Voter) newappmsgvoteShow() error {
+	v.values.Set("supervoteid", v.Info.Supervoteid)
+	v.values.Set("action", "show")
+	log.Printf("newappmsgvoteShow values: %+v", v.values)
+
 	url := getNewappmsgvoteShowUrl(v.values)
 	res, err := v.client.Get(url)
 	if err != nil {
@@ -75,6 +79,17 @@ func (v *Voter) newappmsgvoteShow() error {
 	defer res.Body.Close()
 
 	// 这里不需要做什么，supervoteid是之前就有的
+	// TODO 判断这个URL是否已经投过票。如果已投过，再投也会成功，因此需要在这里提前判断
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("newappmsgvoteShow read body error: %v", err)
+		return err
+	}
+	log.Printf("newappmsgvoteShow resBody: %v", string(resBody))
+	if bytes.Contains(resBody, []byte(`"selected":true`)) {
+		log.Printf("newappmsgvoteShow already has vote")
+		return errors.New("newappmsgvoteShow already has vote")
+	}
 
 	return nil
 }
