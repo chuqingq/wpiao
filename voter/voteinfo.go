@@ -29,13 +29,13 @@ func (vis VoteInfos) Del(key string) {
 }
 
 type VoteInfo struct {
-	Id          bson.ObjectId          `bson:"_id"` 
+	Id          bson.ObjectId          `bson:"_id"`
 	Key         string                 `bson:"key"`    // 可以唯一标识一个投票的 TODO
 	Status      string                 `bson:"status"` // 任务状态：prepare,doing,finished
 	Url         string                 `bson:"url"`    // 短URL
 	Supervoteid string                 `bson:"supervoteid"`
 	Info        map[string]interface{} `bson:"info"`  // 投票信息。包括活动标题、到期时间、投票对象等
-	Item        string                 `bson:"item"` // Item        map[string]interface{} `bson:"item"`  // 投的对象
+	Item        string                 `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
 	User        string                 `bson:"user"`  // 下发任务的用户名
 	Votes       uint64                 `bson:"votes"` // 票数
 	Speed       uint64                 `bson:"speed"` // TODO 暂未使用。每分钟的票数
@@ -61,7 +61,7 @@ func GetKeyFromUrl(voteUrl string) string {
 }
 
 func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
-	log.Printf("NewVoteInfo shortOrLongUrl: %v", shortOrLongUrl)
+	log.Printf("NewVoteInfo inputUrl: %v", shortOrLongUrl)
 
 	// 设置cookiejar
 	jar, err := cookiejar.New(nil)
@@ -139,18 +139,19 @@ func NewVoteInfo(shortOrLongUrl string) (*VoteInfo, error) {
 		return nil, err
 	}
 
-	voteInfoStr := string(getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`)))
-	log.Printf("voteInfoStr: %v", voteInfoStr)
+	// voteInfoStr := string(getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`)))
+	voteInfoBytes := getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`))
+	log.Printf("voteInfoStr: %v ...", string(voteInfoBytes[:60]))
 	vi.Info = make(map[string]interface{})
 	// err = json.Unmarshal([]byte(voteInfoStr), &vi.Info)
-	err = jsonUnmarshal([]byte(voteInfoStr), &vi.Info)
-	log.Printf("info: %v", vi.Info)
+	err = jsonUnmarshal(voteInfoBytes, &vi.Info)
+	// log.Printf("info: %v", vi.Info)
 	if err != nil {
 		log.Printf("json.Unmarshal voteInfo error: %v", err)
 		return nil, err
 	}
 
-	// 保存key，传到前端。后面下发任务时再传回来
+	// TODO 保存key，传到前端。后面下发任务时再传回来
 	vi.Info["key"] = vi.Key
 
 	return vi, nil

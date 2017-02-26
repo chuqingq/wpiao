@@ -10,10 +10,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const SHORT_URL = "http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w"
-const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}`
-const DST_VOTES = 1
-const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
+// const SHORT_URL = "http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w"
+// const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}`
+// const DST_VOTES = 1
+// const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
 var gWsConns = map[string]*websocket.Conn{}
 
@@ -50,7 +50,7 @@ func main() {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Login:")
+	log.Printf("/api/login:")
 
 	user := UserLogin(w, r)
 	if user == nil {
@@ -121,7 +121,7 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	log.Printf("voteInfo: %+v", voteInfo)
+	// log.Printf("voteInfo: %+v", voteInfo)
 
 	infoBytes, err := json.Marshal(voteInfo.Info)
 	if err != nil {
@@ -147,7 +147,7 @@ func SubmitItem(w http.ResponseWriter, r *http.Request) {
 
 // 提交任务
 func SubmitTask(w http.ResponseWriter, r *http.Request) {
-	log.Printf("SubmitTask:")
+	log.Printf("/api/submittask:")
 
 	user := UserLogin(w, r)
 	if user == nil {
@@ -223,11 +223,11 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	speed, _ := task["votespermin"].(json.Number).Int64()
 
 	voteInfo := &VoteInfo{
-		Id: bson.NewObjectId(),
+		Id:  bson.NewObjectId(),
 		Url: voteUrl,
 		// Key:    GetKeyFromUrl(voteUrl),
-		Key:    key,
-		Info:   info,
+		Key:  key,
+		Info: info,
 		// Item:   item,
 		Item:   itemStr,
 		User:   user.UserName,
@@ -272,7 +272,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func WsPC(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/ws/pc")
+	log.Printf("/api/ws/pc:")
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -376,7 +376,7 @@ func UsersHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func NewUser(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/newuser")
+	log.Printf("/api/newuser:")
 
 	user := UserLogin(w, r)
 	if user == nil {

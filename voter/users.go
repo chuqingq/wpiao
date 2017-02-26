@@ -26,7 +26,7 @@ type User struct {
 // 第二步：如果没带正确的cookie，且没带正确的用户名密码，则失败，返回false，返回结果
 // 第三步：如果没带正确的cookie，带了正确的用户名密码，则成功，返回true，且设置了cookie，不返回结果
 func UserLogin(w http.ResponseWriter, r *http.Request) *User {
-	log.Printf("users Login:")
+	// log.Printf("UserLogin:")
 
 	// 从数据库里读取所有用户名密码
 	err := MgoFind("weipiao", "user", bson.M{}, &gUsers)
@@ -34,6 +34,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 		log.Printf("MgoFind user error: %v", err)
 		return nil
 	}
+	// log.Printf("load users: %v", len(gUsers))
 
 	u := checkCookie(w, r)
 	if u != nil {
@@ -42,15 +43,13 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 
 	// TODO username、timestamp（单位是秒）、password、
 	username := r.FormValue("username")
-	log.Printf("username: %v", username)
 	timestamp := r.FormValue("timestamp")
-	log.Printf("timestamp: %v", timestamp)
 	password := r.FormValue("password")
-	log.Printf("password: %v", password)
+	// log.Printf("username: %v, password: %v, timestamp: %v", username, password, timestamp)
 
 	u = check(username, password, timestamp)
 	if u == nil {
-		log.Printf("check user error")
+		// log.Printf("check user error")
 		w.Write([]byte(`{"ret":403,"msg":"username or password is invalid"}`))
 		return nil
 	}
@@ -81,21 +80,21 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 
 // 如果返回nil说明check失败，后续会判断用户名密码，因此这里不写入响应
 func checkCookie(w http.ResponseWriter, r *http.Request) *User {
-	log.Printf("checkCookie: ")
+	// log.Printf("checkCookie: ")
 
 	// 检查cookie是否合法、未过期
 	usernameCookie, usernameCookieErr := r.Cookie("wp_username")
 	passwordCookie, passwordCookieErr := r.Cookie("wp_password")
 	timestampCookie, timestampCookieErr := r.Cookie("wp_timestamp")
 	if usernameCookieErr != nil || passwordCookieErr != nil || timestampCookieErr != nil {
-		log.Printf("get cookie error")
+		log.Printf("checkCookie error: get cookie error: %v, %v, %v", usernameCookieErr, passwordCookieErr, timestampCookieErr)
 		// w.Write([]byte(`{"ret":403,"msg":"cookie is invalid"}`))
 		return nil
 	}
 
 	u := check(usernameCookie.Value, passwordCookie.Value, timestampCookie.Value)
 	if u == nil {
-		log.Printf("check error")
+		// log.Printf("check error")
 		// w.Write([]byte(`{"ret":403,"msg":"check cookie error"}`))
 		return nil
 	}
@@ -104,11 +103,11 @@ func checkCookie(w http.ResponseWriter, r *http.Request) *User {
 }
 
 func check(username, password, timestamp string) *User {
-	log.Printf("check: %v, %v, %v", username, password, timestamp)
+	// log.Printf("check: %v, %v, %v", username, password, timestamp)
 
 	// timestamp是超时时间,单位是秒，password是salt+password做sha1后的结果
 	if username == "" || password == "" || timestamp == "" {
-		log.Printf("param is invalid")
+		log.Printf("check error: param is empty: %v, %v, %v", username, password, timestamp)
 		return nil
 	}
 
@@ -142,9 +141,8 @@ func check(username, password, timestamp string) *User {
 	// 计算password
 	by := sha1.Sum([]byte(timestamp + u.Password))
 	byHex := hex.EncodeToString(by[:])
-	log.Printf("byHex: %v", byHex)
 	if byHex != password {
-		log.Printf("password %v not match")
+		log.Printf("password not match: %v, %v, %v, %v", username, password, timestamp, byHex)
 		return nil
 	}
 

@@ -59,7 +59,7 @@
         </div> -->
         <div class="form-group">
           <div class="col-sm-offset-2 col-sm-10">
-            <button id="login" type="submit" class="btn btn-default">登录</button>
+            <input type="button" id="login" class="btn btn-default" value="登录">
           </div>
         </div>
       </form>
@@ -95,6 +95,7 @@
               window.location = '/index.html';
             } else {
               alert('用户名或密码无效');
+              return false;
             }
           });
         });
