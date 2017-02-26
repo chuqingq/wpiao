@@ -15,7 +15,15 @@ import (
 // const DST_VOTES = 1
 // const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
 
-var gWsConns = map[string]*websocket.Conn{}
+// var gWsConns = map[string]*websocket.Conn{}
+
+type PC struct {
+	Name         string
+	AccountCount int
+	Conn         *websocket.Conn
+}
+
+var gPC = map[string]*PC{}
 
 func main() {
 	// mongo
@@ -252,22 +260,22 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 
 	// 处理任务
-	pcCount := len(gWsConns)
+	pcCount := len(gPC)
 	if pcCount == 0 {
 		log.Printf("ERROR executer not found")
 		return
 	}
 
-	for _, wsConn := range gWsConns {
+	for _, pc := range gPC {
 		req := map[string]interface{}{}
 		req["cmd"] = "vote"
 		req["url"] = voteInfo.Url
 		req["votes"] = voteInfo.Votes
-		err := wsConn.WriteJSON(req)
+		err := pc.Conn.WriteJSON(req)
 		if err != nil {
 			log.Printf("ws.WriteJSON error: %v", err)
 		}
-		log.Printf("dispatch task(%v,%v) to executer(%v)", voteInfo.Url, voteInfo.Votes, wsConn.RemoteAddr().String())
+		log.Printf("dispatch task(%v,%v) to executer(%v)", voteInfo.Url, voteInfo.Votes, pc.Conn.RemoteAddr().String())
 		break // TODO 暂时直接把所有票数都发到第一个pc上去
 	}
 }
@@ -290,16 +298,25 @@ func WsPC(w http.ResponseWriter, r *http.Request) {
 
 	addr := ws.RemoteAddr().String()
 	log.Printf("remoteaddr: %v", addr)
-	gWsConns[addr] = ws
-	defer delete(gWsConns, addr)
+	// gWsConns[addr] = ws
+	// defer delete(gWsConns, addr)
 
 	for {
-		msgtype, msg, err := ws.ReadMessage()
+		msgtype, msgBytes, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("ws.ReadMessage error: %v", err)
 			return
 		}
-		log.Printf("type: %v, content: %v", msgtype, string(msg))
+		log.Printf("type: %v, content: %v", msgtype, string(msgBytes))
+
+		pc := &PC{}
+		err = json.Unmarshal(msgBytes, pc)
+		if err != nil {
+			log.Printf("json.Unmarshal: %v", err)
+			continue
+		}
+
+		gPC[pc.Name] = pc
 	}
 }
 

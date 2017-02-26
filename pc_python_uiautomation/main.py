@@ -30,6 +30,10 @@ def on_close(ws):
 
 def on_open(ws):
     print('on_open: ')
+    # 发送当前微信账号数量
+    # {"pc": "wp-001", "account_count": 10}
+    res = {"pc": "wp-001", "account_count": 10}
+    ws.send(json.dumps(res))
     # def run(*args):
     #     for i in range(3):
     #         time.sleep(1)
