@@ -3,6 +3,7 @@
 import websocket
 # import thread
 import time
+import socket
 import json
 import threading
 
@@ -32,7 +33,8 @@ def on_open(ws):
     print('on_open: ')
     # 发送当前微信账号数量
     # {"pc": "wp-001", "account_count": 10}
-    res = {"pc": "wp-001", "account_count": 10}
+    res = {"pc": socket.getfqdn(), "account_count": len(vote.handleDict)}
+    print("login: ", res)
     ws.send(json.dumps(res))
     # def run(*args):
     #     for i in range(3):

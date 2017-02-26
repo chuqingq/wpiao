@@ -317,6 +317,7 @@ func WsPC(w http.ResponseWriter, r *http.Request) {
 		}
 
 		gPC[pc.Name] = pc
+		defer delete(gPC, pc.Name)
 	}
 }
 
