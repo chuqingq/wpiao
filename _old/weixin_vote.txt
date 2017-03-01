@@ -1,0 +1,243 @@
+#-------------------------------------------------------------------------------
+# 当前方案
+
+* 安装python
+* 安装uiautomator
+* ~~修改uiautomator代码，改为不安装两个apk，而是手工安装。~~
+
+#-------------------------------------------------------------------------------
+# 安装appium
+npm install -g appium
+
+# 安装appium的python-client
+pip install Appium-Python-Client
+
+#-------------------------------------------------------------------------------
+# 启动服务端
+# appium --no-reset
+
+# 启动python-client
+from appium import webdriver
+
+desired_caps = {}
+desired_caps['platformName'] = 'Android'
+desired_caps['platformVersion'] = '4.4.4'
+#desired_caps['deviceName'] = '071efe2c00e37e37'
+desired_caps['deviceName'] = '200ac4ae'
+# 不指定app
+# desired_caps['app'] = '/Users/chuqq/work/sample-code/sample-code/apps/weixin.apk'
+desired_caps['appPackage'] = 'com.tencent.mm'
+desired_caps['appActivity'] = 'com.tencent.mm.ui.LauncherUI'
+
+# 支持中文
+desired_caps["unicodeKeyboard"] = True
+desired_caps["resetKeyboard"] = True
+
+# 超时时间长一点
+desired_caps['newCommandTimeout'] = 3600
+desired_caps['noReset'] = True
+
+driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+
+#-------------------------------------------------------------------------------
+
+# 退出前面的微信账号
+el = driver.find_element_by_android_uiautomator('text("我")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("设置")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("退出")')
+el.click()
+
+driver.tap([(300, 600)]) # 退出当前账号
+
+el = driver.find_element_by_android_uiautomator('text("退出")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("更多")')
+el.click()
+
+driver.tap([(300, 560)]) # 切换账号
+
+# 登录微信账号
+el = driver.find_element_by_android_uiautomator('text("登录")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("你的手机号码")')
+el.send_keys(u'17092560668')
+
+el = driver.find_element_by_android_uiautomator('new UiSelector().resourceId("com.tencent.mm:id/fo")')
+# el = driver.find_element_by_android_uiautomator('text("填写密码")')
+el.send_keys(u'580608.Chu4')
+
+el = driver.find_element_by_android_uiautomator('text("登录")')
+el.click()
+
+# TODO 好像也不是每次都需要
+el = driver.find_element_by_android_uiautomator('text("是")')
+el.click()
+
+#-------------------------------------------------------------------------------
+# 选择右上角加号
+# driver.tap([(800, 140)])
+el = driver.find_element_by_accessibility_id('搜索')
+el.click()
+
+el = driver.find_element_by_class_name('android.widget.EditText')
+# el.send_keys(u'六安楼市')
+el.send_keys(u'海南日报')
+
+# 点击“搜一搜  xxxx”
+driver.tap([(300, 200)]) # TODO 要求是没有关注过的
+
+# 点击第一个搜索结果
+driver.tap([(300, 300)])
+
+# 滚动到最下方
+driver.swipe(start_x=1,start_y=1600, end_x=1, end_y=100) # TODO 不是必须
+
+# 点击关注
+el = driver.find_element_by_android_uiautomator('text("关注")')
+el.click()
+
+el = driver.find_element_by_accessibility_id('消息')
+el.click()
+
+el = driver.find_element_by_class_name('android.widget.EditText')
+el.send_keys(u'1018')
+
+el = driver.find_element_by_android_uiautomator('text("发送")')
+el.click()
+
+#-------------------------------------------------------------------------------
+# 向下滑。需要统计执行几次？
+driver.swipe(start_x=300,start_y=1200, end_x=300, end_y=150)
+
+# 点击某个点
+
+#-------------------------------------------------------------------------------
+# 获取元素并点击的方式。通过别的微信把投票的公众号发过来。因为webview搞不定
+el = driver.find_element_by_android_uiautomator('text("饮湖后雨")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("六安楼市")')
+el.click()
+
+el = driver.find_element_by_android_uiautomator('text("关注")')
+el.click()
+
+el = driver.find_element_by_accessibility_id('消息')
+el.click()
+
+el = driver.find_element_by_class_name('android.widget.EditText')
+el.send_keys(u'1018')
+
+el = driver.find_element_by_android_uiautomator('text("发送")')
+el.click()
+
+#------------------------------------------------------------------
+# 获取元素的内容
+
+els = driver.find_elements_by_android_uiautomator('new UiSelector().resourceId("com.tencent.mm:id/e9")')
+# 海口周三 10月05日 (实时：27℃)多云微风29 ~ 24℃
+els[1].get_attribute('text')
+
+#------------------------------------------------------------------
+
+# 登录微信
+el = driver.find_element_by_android_uiautomator('text("登录")')
+el.click()
+
+# 按home键
+# driver.press_keycode(3)
+
+# 选择微信
+# el = driver.find_element_by_android_uiautomator('text("微信")')
+# el.click()
+
+driver.launch_app()
+
+# 选择通讯录
+el = driver.find_element_by_android_uiautomator('text("通讯录")')
+el.click()
+
+# 选择公众号
+el = driver.find_element_by_android_uiautomator('text("公众号")')
+el.click()
+
+#-------------------------------------------------------------------------------
+# 选择右上角加号
+el = driver.find_element_by_accessibility_id('搜索')
+el.click()
+
+el = driver.find_element_by_class_name('android.widget.EditText')
+el.send_keys(u'六安楼市')
+
+el = driver.find_element_by_android_uiautomator('text("搜一搜  六安楼市")')
+el.click()
+
+## 点击500、500。如下
+#-------------------------------------------------------------------------------
+# 点击某个位置（应该可以搞定webview）
+from appium.webdriver.common.touch_action import TouchAction
+ta1 = TouchAction()
+ta1.press(el=None, x=500, y=500).release()
+
+from appium.webdriver.common.multi_action import MultiAction
+ma = MultiAction(driver)
+ma.add(ta1, ta1)
+ma.perform()
+#-------------------------------------------------------------------------------
+
+# 选择右上角加号
+# el = driver.find_element_by_android_uiautomator('text("添加")')
+el = driver.find_element_by_accessibility_id('添加')
+el.click()
+
+# 输入公众号“六安楼市”，按回车（无效）
+el = driver.find_element_by_class_name('android.widget.EditText')
+# driver.set_value(el, '六安楼市')
+# el.set_value('六安楼市')
+el.send_keys(u'六安楼市')
+
+# 唤醒ime
+engines = driver.available_ime_engines
+active_engine = driver.active_ime_engine
+driver.activate_ime_engine(engines[-1])
+
+
+# 按回车无效，因此模拟touch
+from appium.webdriver.common.touch_action import TouchAction
+ta = TouchAction()
+ta.press(el=el, x=980, y=1676).release()
+
+driver.keyevent(66)
+driver.press_keycode(66) # 按回车
+
+# 点击第一项“六安楼市”
+
+# 点击关注
+
+# 点击输入按钮
+
+# 在输入框中输入1018，点击发送
+
+
+el = driver.find_element_by_android_uiautomator('text("登录")')
+el = driver.find_element_by_accessibility_id('Graphics')
+el.click()
+
+driver.quit()
+
+#---------------------------------------------------------------------
+参考资料：
+1、python-client：https://github.com/appium/python-client
+2、appium的sample-code：https://github.com/appium/sample-code/tree/master/sample-code/examples/python
+
+#---------------------------------------------------------------------
+TODO
+能否支持uiautomatorviewer录制动作？
+用emulator-arm验证微信支持模拟器登陆（可能不正式使用，因为据说微信封模拟器登陆的账号）
+用uiautomator验证安卓自动化测试。避免又隔一层appium
