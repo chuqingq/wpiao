@@ -33,6 +33,8 @@ func main() {
 	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
 
+	http.HandleFunc("/api/users/changepassword", ChangePasswordHandle)
+
 	http.HandleFunc("/api/users", UsersHandle)
 	http.HandleFunc("/api/newuser", NewUser)
 
@@ -375,6 +377,39 @@ func RunnerVote(w http.ResponseWriter, r *http.Request) {
 func WsWeb(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/ws/web")
 	// TODO
+}
+
+func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/users/changepassword:")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	// oldpass := r.FormValue("old")
+	// if oldpass == "" {
+	// 	log.Printf("oldpassword is empty")
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
+
+	newpass := r.FormValue("new")
+	if newpass == "" {
+		log.Printf("newpassword is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// TODO 没使用旧
+	err := user.ChangePassword(newpass)
+	if err != nil {
+		log.Printf("ChangePassword error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("{}"))
 }
 
 func UsersHandle(w http.ResponseWriter, r *http.Request) {

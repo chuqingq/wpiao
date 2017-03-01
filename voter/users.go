@@ -163,3 +163,7 @@ func (user *User) QueryAllUsers() ([]*User, error) {
 
 	return users, nil
 }
+
+func (user *User) ChangePassword(pass string) error {
+	return MgoUpdate("weipiao", "user", bson.M{"username": user.UserName}, bson.M{"$set": bson.M{"password": pass}})
+}

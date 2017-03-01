@@ -57,6 +57,7 @@
               <li><a href="#" @click="stepNewTask">新建任务</a></li>
               <li><a href="#" @click="stepUserList">用户列表</a></li>
               <li><a href="#" @click="stepNewUser">新建用户</a></li>
+              <li><a href="#" @click="stepChangePassword">修改密码</a></li>
             </ul>
             <!-- <form class="navbar-form navbar-right">
               <input type="text" class="form-control" placeholder="Search...">
@@ -72,15 +73,16 @@
             <ul class="nav nav-sidebar">
               <li v-bind:class="{active: step1=='tasklist'}"><a href="#" @click="stepTaskList">任务列表 <span class="sr-only">(current)</span></a></li>
               <li v-bind:class="{active: step1=='newtask'}"><a href="#" @click="stepNewTask">新建任务</a></li>
-              <li><a href="#">Analytics</a></li>
-              <li><a href="#">Export</a></li>
+            </ul>
+            <!-- 自己管理 -->
+            <ul class="nav nav-sidebar">
+              <li><a href="#" @click="stepChangePassword">修改密码</a></li>
+              <li><a href="#" @click="stepNewUser">abc</a></li>
             </ul>
             <!-- 管理员 -->
             <ul class="nav nav-sidebar">
               <li><a href="#" @click="stepUserList">用户列表</a></li>
               <li><a href="#" @click="stepNewUser">新增用户</a></li>
-              <li><a href="">One more nav</a></li>
-              <li><a href="">Another nav item</a></li>
             </ul>
           </div>
 
@@ -238,6 +240,26 @@
                 您已成功下发任务，点击<a href="#" class="alert-link" @click="stepTaskList">这里查看任务</a>
               </div>
             </div>
+
+            <!-- changePassword -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='changepassword'">
+              <div class="input-group">
+                <span class="input-group-addon">旧密码</span>
+                <input type="password" class="form-control" v-model="oldpassword">
+              </div>
+              <br>
+              <div class="input-group">
+                <span class="input-group-addon">新密码</span>
+                <input type="password" class="form-control" v-model="newpassword">
+              </div>
+              <br>
+              <div class="input-group">
+                <span class="input-group-addon">确认新密码</span>
+                <input type="password" class="form-control" v-model="confirmnewpassword">
+              </div>
+              <br>
+              <button type="button btn-primary" class="form-control" @click="changepassword">确认</button>
+            </div>
           </div>
         </div>
       </div>
@@ -280,6 +302,11 @@
           data: {
             step1: 'tasklist', // 当前第一级步骤：tasklist任务列表，newtask新建任务
             tasks: [],
+
+            // 修改密码
+            oldpassword: '',
+            newpassword: '',
+            confirmnewpassword: '',
 
             step: 'parseurl', // 当前第二级步骤：parseurl、submititem、submittask
             url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
@@ -325,6 +352,9 @@
             stepNewTask: function() {
               this.step1 = 'newtask';
               this.step = 'parseurl';
+            },
+            stepChangePassword: function() {
+              this.step1 = 'changepassword'
             },
             stepUserList: function() {},
             stepNewUser: function() {},
@@ -410,6 +440,17 @@
                 vm.checklogin(data);
                 console.log('/api/submittask:');
                 vm.step = 'success';
+              });
+            },
+
+            // changePassword
+            changepassword: function() {
+              if (this.newpassword !== this.confirmnewpassword) {
+                alert('新密码两次输入不匹配');
+                return;
+              }
+              $.getJSON('/api/users/changepassword?old='+encodeURIComponent(vm.oldpassword)+'&new='+encodeURIComponent(vm.newpassword), function() {
+                alert('密码修改成功！');
               });
             }
           }
