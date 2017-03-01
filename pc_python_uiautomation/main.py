@@ -15,6 +15,8 @@ def on_message(ws, message):
     if msg['cmd'] == 'vote':
         # 投票 {"cmd":"vote", "url": "http://wxxxx", "votes": 100}
         vote.vote(msg['url'], msg['votes'])
+        # 通知voter投票结束：cmd: vote_finish
+        ws.send(json.dumps({'cmd': 'vote_finish', 'url': msg['url'], 'votes': msg['votes']}))
     elif msg['cmd'] == 'train':
         vote.train()
     else:
@@ -33,7 +35,7 @@ def on_open(ws):
     print('on_open: ')
     # 发送当前微信账号数量
     # {"pc": "wp-001", "account_count": 10}
-    res = {"pc": socket.getfqdn(), "account_count": len(vote.handleDict)}
+    res = {"cmd": "login", "pc": socket.getfqdn(), "account_count": len(vote.handleDict)}
     print("login: ", res)
     ws.send(json.dumps(res))
     # def run(*args):
@@ -47,7 +49,7 @@ def on_open(ws):
 
 def start_websocket():
     websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://127.0.0.1:8080/api/ws/pc",
+    ws = websocket.WebSocketApp("ws://127.0.0.1:8080/api/ws/runner",
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)
