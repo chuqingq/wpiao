@@ -17,14 +17,6 @@ import (
 
 // var gWsConns = map[string]*websocket.Conn{}
 
-type PC struct {
-	Name         string
-	AccountCount int
-	Conn         *websocket.Conn
-}
-
-var gPC = map[string]*PC{}
-
 func main() {
 	// mongo
 	err := InitMongo("127.0.0.1")
@@ -36,7 +28,7 @@ func main() {
 	// beego.BConfig.WebConfig.Session.SessionProvider 默认是 memory，目前支持还有 file、mysql、redis 等
 	// beego.BConfig.WebConfig.Session.SessionGCMaxLifetime 默认3600秒
 	http.HandleFunc("/api/login", Login)
-	http.HandleFunc("/api/tasks", Tasks)
+	http.HandleFunc("/api/tasks", TasksHandle)
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
@@ -44,9 +36,9 @@ func main() {
 	http.HandleFunc("/api/users", UsersHandle)
 	http.HandleFunc("/api/newuser", NewUser)
 
-	// TODO websocket1: /api/ws/pc PC端连接，下发任务
-	http.HandleFunc("/api/ws/pc", WsPC)
-	http.HandleFunc("/api/vote", PCVote)
+	// TODO websocket1: /api/ws/runner PC端连接，下发任务
+	http.HandleFunc("/api/ws/runner", WsRunner)
+	http.HandleFunc("/api/vote", RunnerVote)
 
 	// TODO websocket2: /api/ws/web web端连接，实时查询状态
 	http.HandleFunc("/api/ws/web", WsWeb)
@@ -69,7 +61,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"ret":0,"msg":"login success"}`))
 }
 
-func Tasks(w http.ResponseWriter, r *http.Request) {
+func TasksHandle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/tasks:")
 
 	user := UserLogin(w, r)
@@ -78,9 +70,9 @@ func Tasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取任务时需要按照user获取
-	voteInfos, err := QueryVoteInfosByUser(user.UserName)
+	voteInfos, err := QueryTasksByUser(user.UserName)
 	if err != nil {
-		log.Printf("QueryVoteInfosByUser error: %v", err)
+		log.Printf("QueryTasksByUser error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -123,18 +115,18 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 	log.Printf("voteUrl: %v", voteUrl)
 
 	// 根据短url来获取投票信息
-	voteInfo, err := NewVoteInfo(voteUrl)
+	task, err := NewTask(voteUrl)
 	if err != nil {
-		log.Printf("NewVoteInfo error: %v", err)
+		log.Printf("NewTask error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// log.Printf("voteInfo: %+v", voteInfo)
+	// log.Printf("task: %+v", task)
 
-	// infoBytes, err := json.Marshal(voteInfo.Info)
+	// infoBytes, err := json.Marshal(task.Info)
 	info := map[string]interface{}{}
-	info["key"] = voteInfo.Key
-	info["info"] = voteInfo.Info
+	info["key"] = task.Key
+	info["info"] = task.Info
 	infoBytes, err := json.Marshal(info)
 	if err != nil {
 		log.Printf("marshal info error: %v", err)
@@ -236,7 +228,7 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	votes, _ := task["votes"].(json.Number).Int64()
 	speed, _ := task["votespermin"].(json.Number).Int64()
 
-	voteInfo := &VoteInfo{
+	taskStruct := &Task{
 		Id:  bson.NewObjectId(),
 		Url: voteUrl,
 		// Key:    GetKeyFromUrl(voteUrl),
@@ -251,33 +243,30 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 写到数据库中
-	err = voteInfo.Insert()
+	err = taskStruct.Insert()
 	if err != nil {
-		log.Printf("voteinfo.insert error: %v", err)
+		log.Printf("taskStruct.insert error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Write([]byte("{}"))
 
 	// 处理任务
-	pcCount := len(gPC)
-	if pcCount == 0 {
-		log.Printf("ERROR executer not found")
+	runnerCount := len(gRunners)
+	if runnerCount == 0 {
+		log.Printf("ERROR runner not found")
 		return
 	}
 
-	for _, pc := range gPC {
-		req := map[string]interface{}{}
-		req["cmd"] = "vote"
-		req["url"] = voteInfo.Url
-		req["votes"] = voteInfo.Votes
-		err := pc.Conn.WriteJSON(req)
-		if err != nil {
-			log.Printf("ws.WriteJSON error: %v", err)
-		}
-		log.Printf("dispatch task(%v,%v) to executer(%v)", voteInfo.Url, voteInfo.Votes, pc.Conn.RemoteAddr().String())
-		break // TODO 暂时直接把所有票数都发到第一个pc上去
+	runner := GetFreeRunner(key)
+	if runner == nil {
+		log.Printf("ERROR GetFreeRunner returns nil runner")
+		return
 	}
+
+	runner.DispatchTask(taskStruct)
+
+	log.Printf("dispatch task(%v,%v) to executer(%v)", taskStruct.Url, taskStruct.Votes, runner.Conn.RemoteAddr().String())
 }
 
 var upgrader = websocket.Upgrader{
@@ -285,8 +274,8 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func WsPC(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/ws/pc:")
+func WsRunner(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/ws/runer:")
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -309,20 +298,34 @@ func WsPC(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("type: %v, content: %v", msgtype, string(msgBytes))
 
-		pc := &PC{}
-		err = json.Unmarshal(msgBytes, pc)
+		msg := map[string]interface{}{}
+		err = json.Unmarshal(msgBytes, &msg)
 		if err != nil {
-			log.Printf("json.Unmarshal: %v", err)
+			log.Printf("json.Unmarshal error: %v", err)
 			continue
 		}
 
-		gPC[pc.Name] = pc
-		defer delete(gPC, pc.Name)
+		if msg["cmd"].(string) == "login" {
+			runner := &Runner{}
+			err = json.Unmarshal(msgBytes, runner)
+			if err != nil {
+				log.Printf("json.Unmarshal: %v", err)
+				continue
+			}
+
+			gRunners[runner.Name] = runner
+			defer delete(gRunners, runner.Name)
+		} else if msg["cmd"].(string) == "vote_finish" {
+			log.Printf("runner vote finish: %v,%v", addr, msg["url"].(string))
+			// 需要根据完成情况做调整
+			TaskDispatch(msg["url"].(string))
+		}
+
 	}
 }
 
 // browser把url发过来
-func PCVote(w http.ResponseWriter, r *http.Request) {
+func RunnerVote(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/vote:")
 
 	voteUrl := r.FormValue("url")
@@ -343,27 +346,27 @@ func PCVote(w http.ResponseWriter, r *http.Request) {
 	// 先回响应
 	w.WriteHeader(http.StatusOK)
 
-	voteInfo, err := QueryVoteInfoByKey(key)
+	task, err := QueryTaskByKey(key)
 	if err != nil {
-		log.Printf("QueryVoteInfoByKey error: %v,%v", key, err)
+		log.Printf("QueryTaskByKey error: %v,%v", key, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	voter, err := voteInfo.NewVoter(voteUrl)
+	voter, err := task.NewVoter(voteUrl)
 	if err != nil {
 		log.Printf("newvoter error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// log.Printf("type of item: %T", voteInfo.Item["super_vote_id"])
+	// log.Printf("type of item: %T", task.Item["super_vote_id"])
 
 	err = voter.Vote()
 	if err != nil {
 		log.Printf("vote error: %v", err)
 		// 如果投票失败，则票数-1
-		voteInfo.DecrVotes()
+		task.DecrVotes()
 	}
 
 	return

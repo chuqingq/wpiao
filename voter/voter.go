@@ -15,7 +15,7 @@ type Voter struct {
 	url    string
 	client *http.Client
 	values url.Values
-	Info   *VoteInfo
+	Info   *Task
 }
 
 func (v *Voter) Vote() error {
