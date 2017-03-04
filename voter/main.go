@@ -308,17 +308,20 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if msg["cmd"].(string) == "login" {
-			runner := &Runner{}
+			runner := &Runner{
+				Conn: ws,
+			}
 			err = json.Unmarshal(msgBytes, runner)
 			if err != nil {
 				log.Printf("json.Unmarshal: %v", err)
 				continue
 			}
+			log.Printf("runner: %+v", runner)
 
 			gRunners[runner.Name] = runner
 			defer delete(gRunners, runner.Name)
 		} else if msg["cmd"].(string) == "vote_finish" {
-			log.Printf("runner vote finish: %v,%v", addr, msg["url"].(string))
+			log.Printf("runner vote finish: %v,%+v", addr, msg)
 			// 需要根据完成情况做调整
 			TaskDispatch(msg["url"].(string))
 		}

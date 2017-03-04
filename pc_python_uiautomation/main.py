@@ -16,7 +16,9 @@ def on_message(ws, message):
         # 投票 {"cmd":"vote", "url": "http://wxxxx", "votes": 100}
         vote.vote(msg['url'], msg['votes'])
         # 通知voter投票结束：cmd: vote_finish
-        ws.send(json.dumps({'cmd': 'vote_finish', 'url': msg['url'], 'votes': msg['votes']}))
+        vote_finish = json.dumps({'cmd': 'vote_finish', 'url': msg['url'], 'votes': msg['votes']})
+        ws.send(vote_finish)
+        print('vote_finish: ' + vote_finish)
     elif msg['cmd'] == 'train':
         vote.train()
     else:

@@ -293,22 +293,28 @@ func jsonUnmarshal(data []byte, v interface{}) error {
 
 // 一个PC完成后根据url做调整
 func TaskDispatch(voteUrl string) error {
-	log.Printf("TaskAdjust: url: %v", voteUrl)
+	log.Printf("TaskDispatch: url: %v", voteUrl)
 
-	var task []*Task
-	err := MgoFind("weipiao", "task", bson.M{"url": voteUrl, "status": "doing"}, &task)
+	var tasks []*Task
+	err := MgoFind("weipiao", "task", bson.M{"url": voteUrl, "status": "doing"}, &tasks)
 	if err != nil {
 		log.Printf("MgoFind(task) error: %v", err)
 		return err
 	}
 
-	if len(task) == 0 {
+	if len(tasks) == 0 {
 		return errors.New("task not found: url: " + voteUrl)
 	}
 
-	vi := task[0]
-	pc := GetFreeRunner(vi.Key) // TODO 还是要保证db.task中记录是有key的
-	pc.DispatchTask(vi)
+	task := tasks[0]
+	if task.Status == "doing" {
+		r := GetFreeRunner(task.Key) // TODO 还是要保证db.task中记录是有key的
+		if r == nil {
+			log.Printf("TaskDispatch: no free runner: %v", task.Key)
+			return errors.New("TaskDispatch: no free runner")
+		}
+		r.DispatchTask(task)
+	}
 
 	return nil
 }

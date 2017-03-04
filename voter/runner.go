@@ -8,9 +8,10 @@ import (
 )
 
 type Runner struct {
-	Name         string
-	AccountCount int
+	Name         string `json:"pc"`
+	AccountCount int    `json:"account_count"`
 	Conn         *websocket.Conn
+	Addr         string
 }
 
 // 全局变量。有哪些PC已连上来
@@ -24,7 +25,7 @@ type TaskRunner struct {
 
 // 获取task未使用的pc
 func GetFreeRunner(key string) *Runner {
-	log.Printf("TaskPCGetFreeOne: key: %v", key)
+	log.Printf("taskrunnerGetFreeOne: key: %v", key)
 
 	var taskRunner []*TaskRunner
 	err := MgoFind("weipiao", "taskrunner", bson.M{"key": key}, &taskRunner)
@@ -35,21 +36,29 @@ func GetFreeRunner(key string) *Runner {
 
 	// 遍历全局gPC，第一个不在taskKey中的，返回 TODO 加锁
 	for runner, _ := range gRunners {
+		found := false
 		for _, runnerDB := range taskRunner {
-			if runner == runnerDB.Key {
-				continue
+			if runner == runnerDB.Runner {
+				found = true
+				break
 			}
 		}
 
-		// 更新数据库，占用空闲的PC
-		err := MgoInsert("weipiao", "taskpc", bson.M{"key": key, "runner": runner})
-		if err != nil {
-			log.Printf("mgoinsert taskpc error: %v", err)
+		if found {
+			continue
 		}
+
+		// 更新数据库，占用空闲的PC
+		err := MgoInsert("weipiao", "taskrunner", bson.M{"key": key, "runner": runner})
+		if err != nil {
+			log.Printf("mgoinsert taskrunner error: %v", err)
+		}
+
+		log.Printf("GetFreeRunner: key:%v, runner: %+v", key, gRunners[runner])
 		return gRunners[runner]
 	}
 
-	log.Printf("TaskPCGetFreeOne: no free runner for key: %v", key)
+	log.Printf("taskrunnerGetFreeOne: no free runner for key: %v", key)
 	return nil
 }
 
