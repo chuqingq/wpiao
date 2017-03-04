@@ -76,7 +76,7 @@
             </ul>
             <!-- 自己管理 -->
             <ul class="nav nav-sidebar">
-              <li><a href="#" @click="stepChangePassword">修改密码</a></li>
+              <li v-bind:class="{active: step1=='changepassword'}"><a href="#" @click="stepChangePassword">修改密码</a></li>
             </ul>
             <!-- 管理员 -->
             <!-- <ul class="nav nav-sidebar">
