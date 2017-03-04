@@ -103,16 +103,8 @@ func getNewappmsgvoteShowUrl(values url.Values) string { // TODO 合并
 }
 
 func (v *Voter) newappmsgvoteVote() error {
-	// TODO 投票对象如何确定？
 	v.values.Set("action", "vote")
 	v.values.Set("f", "json")
-	// v.values.Set("json", v.item)
-	// item, err := json.Marshal(v.Info.Item)
-	// if err != nil {
-	// 	log.Printf("json.Marshal item error: %v", err)
-	// 	return err
-	// }
-	// v.values.Set("json", string(item))
 	v.values.Set("json", v.Info.Item)
 	log.Printf("vote values: %v", v.values)
 	log.Printf("newappmsgvoteVote formdata: %v", v.values.Encode())
@@ -142,16 +134,25 @@ func (v *Voter) newappmsgvoteVote() error {
 	retStr := resData["base_resp"].(map[string]interface{})["ret"].(json.Number).String()
 	if retStr == "0" {
 		return nil
-	} else if retStr == "-7" {
-		log.Printf("newappmsgvoteVote vote error: 关注公众号后才可以投票")
-		return errors.New("newappmsgvoteVote vote error: 关注公众号后才可以投票")
-	} else if retStr == "-6" {
+	}
+
+	if retStr == "-6" {
 		log.Printf("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
 		return errors.New("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
-	} else {
-		log.Printf("newappmsgvoteVote vote error: 投票失败: " + retStr)
-		return errors.New("newappmsgvoteVote vote error: 投票失败: " + retStr)
 	}
+
+	// 后面的错误可能都是任务本身的问题，例如需要关注、已过期，都把状态设置为fail，不再尝试
+	v.Info.SetStatus("fail")
+
+	if retStr == "-7" {
+		log.Printf("newappmsgvoteVote vote error: 关注公众号后才可以投票")
+		return errors.New("newappmsgvoteVote vote error: 关注公众号后才可以投票")
+	}
+
+	// 其他失败
+	log.Printf("newappmsgvoteVote vote error: 投票失败: " + retStr)
+	return errors.New("newappmsgvoteVote vote error: 投票失败: " + retStr)
+
 }
 
 func getByBound(b, left, right []byte) []byte {

@@ -41,7 +41,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 		return u
 	}
 
-	// TODO username、timestamp（单位是秒）、password、
+	// username、timestamp（单位是秒）、password、
 	username := r.FormValue("username")
 	timestamp := r.FormValue("timestamp")
 	password := r.FormValue("password")

@@ -390,16 +390,21 @@ func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// oldpass := r.FormValue("old")
-	// if oldpass == "" {
-	// 	log.Printf("oldpassword is empty")
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
+	oldpass := r.FormValue("old")
+	if oldpass == "" {
+		log.Printf("oldpassword is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if oldpass != user.Password {
+		log.Printf("老密码不匹配")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	newpass := r.FormValue("new")
 	if newpass == "" {
-		log.Printf("newpassword is empty")
+		log.Printf("新密码不能为空")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -407,7 +412,7 @@ func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
 	// TODO 没使用旧
 	err := user.ChangePassword(newpass)
 	if err != nil {
-		log.Printf("ChangePassword error: %v", err)
+		log.Printf("修改密码失败: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
