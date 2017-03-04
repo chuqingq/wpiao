@@ -9,7 +9,7 @@
     <meta name="author" content="">
     <link rel="icon" href="../../favicon.ico">
 
-    <title>WEIPIAO</title>
+    <title>微票</title>
 
     <!-- Bootstrap core CSS -->
     <link href="./vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -49,7 +49,7 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button> -->
-            <a class="navbar-brand" href="#">WEIPIAO</a>
+            <a class="navbar-brand">微票</a>
           </div>
           <!-- <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -119,7 +119,7 @@
             <!-- newtask -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='newtask'">
               <div v-if="step=='parseurl'" class="input-group">
-                <span class="input-group-addon">xx地址：</span>
+                <span class="input-group-addon">投票地址</span>
                 <input type="text" class="form-control" v-model="url">
               </div>
 
@@ -127,7 +127,7 @@
                 <div class="row">
                   <div class="col-sm-4">
                     <div class="input-group">
-                      <span class="input-group-addon">xx名称</span>
+                      <span class="input-group-addon">投票名称</span>
                       <input type="text" class="form-control" placeholder="xx名称" v-model="voteinfo.title" readonly>
                     </div>
                   </div>
@@ -139,7 +139,7 @@
                   </div>
                   <div class="col-sm-4">
                     <div class="input-group">
-                      <span class="input-group-addon">xx人数</span>
+                      <span class="input-group-addon">投票人数</span>
                       <input type="text" class="form-control" placeholder="Username" v-model="voteinfo.total_person" readonly>
                     </div>
                   </div>
