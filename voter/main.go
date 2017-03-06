@@ -229,6 +229,7 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 
 	votes, _ := task["votes"].(json.Number).Int64()
 	speed, _ := task["votespermin"].(json.Number).Int64()
+	price, _ := task["price"].(json.Number).Float64()
 
 	taskStruct := &Task{
 		Id:  bson.NewObjectId(),
@@ -240,6 +241,7 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		Item:   itemStr,
 		User:   user.UserName,
 		Votes:  uint64(votes),
+		Price:  price,
 		Speed:  uint64(speed),
 		Status: "doing",
 	}

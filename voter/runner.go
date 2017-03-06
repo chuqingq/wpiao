@@ -68,6 +68,13 @@ func (r *Runner) DispatchTask(task *Task) {
 		return
 	}
 
+	// 检查用户余额是否足够
+	user := gUsers.GetUserByName(task.User)
+	if user.Balance < float64(task.Votes)*task.Price {
+		log.Println("用户 %s 余额不足: %f < %d*%f", task.User, user.Balance, task.Votes, task.Price)
+		return
+	}
+
 	req := map[string]interface{}{}
 	req["cmd"] = "vote"
 	req["url"] = task.Url

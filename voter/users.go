@@ -17,9 +17,10 @@ var gUsers Users
 type Users []*User
 
 type User struct {
-	UserName string `bson:"username"`
-	Password string `bson:"password"`
-	IsAdmin  bool   `bson:"isadmin"`
+	UserName string  `bson:"username"`
+	Password string  `bson:"password"`
+	IsAdmin  bool    `bson:"isadmin"`
+	Balance  float64 `bson:"balance"`
 }
 
 // 第一步：如果带了正确的cookie，则成功，返回true，不返回结果
@@ -166,4 +167,13 @@ func (user *User) QueryAllUsers() ([]*User, error) {
 
 func (user *User) ChangePassword(pass string) error {
 	return MgoUpdate("weipiao", "user", bson.M{"username": user.UserName}, bson.M{"$set": bson.M{"password": pass}})
+}
+
+func (users Users) GetUserByName(name string) *User {
+	for _, user := range users {
+		if user.UserName == name {
+			return user
+		}
+	}
+	return nil
 }
