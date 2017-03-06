@@ -399,6 +399,12 @@
                 }
                 console.log('item_idx: ' + item_idx);
 
+                // 判断是否在所有活动中投票
+                if (item_idx == [] || item_idx[0] == 'undefined') {
+                  alert('请完成所有投票');
+                  return;
+                }
+
                 super_vote_item.push({vote_id: vote_subject.vote_id, item_idx_list: {item_idx: item_idx}});
               }
               var voteItem = {
