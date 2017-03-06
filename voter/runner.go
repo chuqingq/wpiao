@@ -74,13 +74,18 @@ func (r *Runner) DispatchTask(task *Task) {
 		log.Println("用户 %s 余额不足: %f < %d*%f", task.User, user.Balance, task.Votes, task.Price)
 		return
 	}
+	err := user.SetBalance(user.Balance - float64(task.Votes)*task.Price)
+	if err != nil {
+		log.Println("计费失败: %v", err)
+		return
+	}
 
 	req := map[string]interface{}{}
 	req["cmd"] = "vote"
 	req["url"] = task.Url
 	req["votes"] = votes
 
-	err := r.Conn.WriteJSON(req)
+	err = r.Conn.WriteJSON(req)
 	if err != nil {
 		log.Printf("ws.WriteJSON error: %v", err)
 	}

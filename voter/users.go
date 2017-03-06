@@ -166,7 +166,13 @@ func (user *User) QueryAllUsers() ([]*User, error) {
 }
 
 func (user *User) ChangePassword(pass string) error {
+	user.Password = pass
 	return MgoUpdate("weipiao", "user", bson.M{"username": user.UserName}, bson.M{"$set": bson.M{"password": pass}})
+}
+
+func (user *User) SetBalance(balance float64) error {
+	user.Balance = balance
+	return MgoUpdate("weipiao", "user", bson.M{"username": user.UserName}, bson.M{"$set": bson.M{"balance": balance}})
 }
 
 func (users Users) GetUserByName(name string) *User {
