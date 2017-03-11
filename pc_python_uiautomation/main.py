@@ -13,9 +13,9 @@ def on_message(ws, message):
     print('on_message: ' + message)
     msg = json.loads(message)
     if msg['cmd'] == 'vote':
-        # 投票 {"cmd":"vote", "url": "http://wxxxx", "votes": 100}
+        # 开始投票 {"cmd":"vote", "url": "http://wxxxx", "votes": 100}
         vote.vote(msg['url'], msg['votes'])
-        # 通知voter投票结束：cmd: vote_finish
+        # 投票结束 通知voter cmd: vote_finish
         vote_finish = json.dumps({'cmd': 'vote_finish', 'url': msg['url'], 'votes': msg['votes']})
         ws.send(vote_finish)
         print('vote_finish: ' + vote_finish)
