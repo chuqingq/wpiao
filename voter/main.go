@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	// "strconv"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
@@ -60,7 +60,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(`{"ret":0,"msg":"login success"}`))
+	w.Write([]byte(`{"ret":0,"msg":"login success", "isadmin": ` + strconv.FormatBool(user.IsAdmin) + `}`))
 }
 
 func TasksHandle(w http.ResponseWriter, r *http.Request) {

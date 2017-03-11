@@ -67,7 +67,38 @@
       </nav>
 
       <div class="container-fluid">
-        <div class="row">
+        <div class="row" v-if="step1=='login'">
+          <br>
+          <form class="form-horizontal">
+            <div class="form-group">
+              <label class="col-sm-2 control-label">用户名</label>
+              <div class="col-sm-6">
+                <input class="form-control" id="username" placeholder="用户名">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-2 control-label">密码</label>
+              <div class="col-sm-6">
+                <input type="password" class="form-control" id="password" placeholder="密码">
+              </div>
+            </div>
+            <!-- <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <div class="checkbox">
+                  <label>
+                    <input type="checkbox"> Remember me
+                  </label>
+                </div>
+              </div>
+            </div> -->
+            <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <input type="button" id="login" class="btn btn-default" value="登录" @click="login">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="row" v-else>
           <div class="col-sm-3 col-md-2 sidebar">
             <!-- 普通用户 -->
             <ul class="nav nav-sidebar">
@@ -76,13 +107,15 @@
             </ul>
             <!-- 自己管理 -->
             <ul class="nav nav-sidebar">
+              <li v-bind:class="{active: step1=='mymoney'}"><a href="#" @click="stepMyMoney">我的余额</a></li>
               <li v-bind:class="{active: step1=='changepassword'}"><a href="#" @click="stepChangePassword">修改密码</a></li>
             </ul>
             <!-- 管理员 -->
-            <!-- <ul class="nav nav-sidebar">
+            <ul class="nav nav-sidebar" v-if="user.isadmin">
               <li><a href="#" @click="stepUserList">用户列表</a></li>
               <li><a href="#" @click="stepNewUser">新增用户</a></li>
-            </ul> -->
+              <li><a href="#" @click="stepRunnerList">Runner列表</a></li>
+            </ul>
           </div>
 
           <div>
@@ -271,6 +304,7 @@
     <script src="./vendor/vuejs/vue.js"></script>
     <script src="./vendor/jquery/jquery.min.js"></script>
     <script src="./vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./vendor/hashes/hashes.min.js"></script>
     <!-- Just to make our placeholder images work. Don't actually copy the next line! -->
     <!-- <script src="../../assets/js/vendor/holder.min.js"></script> -->
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
@@ -299,6 +333,8 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
+            user: {isadmin: false},
+
             step1: 'tasklist', // 当前第一级步骤：tasklist任务列表，newtask新建任务
             tasks: [],
 
@@ -334,16 +370,42 @@
             // selected: function() {},
           },
           methods: {
+            login: function() {
+              console.log('login:');
+              var username = $('#username').val();
+              var password = $('#password').val();
+              var timestamp = Math.round(new Date().getTime()/1000) + 4*60*60;
+              timestamp = '' + timestamp;
+
+              var SHA1 = new Hashes.SHA1;
+              password = SHA1.hex(timestamp + password);
+
+              $.getJSON('/api/login?username='+username+'&password='+password+'&timestamp='+timestamp, function(data, status) {
+                if (data.ret == 0) {
+                  // window.location = '/index.html';
+                  console.log('login success');
+                  // vm.step1 = 'tasklist';
+                  vm.user.isadmin = !!data.isadmin;
+                  vm.stepTaskList();
+                } else {
+                  alert('用户名或密码无效');
+                  return false;
+                }
+              });
+            },
             checklogin: function(data) {
               if (typeof data === 'object' && data.ret === 403) {
-                window.location = '/login.html';
+                // window.location = '/login.html';
+                vm.step1 = 'login';
+                return false;
               }
+              return true;
             },
             // step1
             stepTaskList: function() {
               $.getJSON('/api/tasks', function(data, status) {
                 console.log('/api/tasks:')
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 vm.step1 = 'tasklist';
                 vm.$set(vm, 'tasks', data);
               });
@@ -351,6 +413,9 @@
             stepNewTask: function() {
               this.step1 = 'newtask';
               this.step = 'parseurl';
+            },
+            stepMyMoney: function() {
+              this.step1 = 'mymoney';
             },
             stepChangePassword: function() {
               this.step1 = 'changepassword'
@@ -370,7 +435,7 @@
               // var url = 'voteInfo2.json';
               $.getJSON(url, function(data, status) {
                 console.log('voteinfo='+JSON.stringify(data));
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 vm.$set(vm, 'voteinfo', data.info);
                 vm.$set(vm, 'key', data.key);
                 vm.step = 'selectvote';
@@ -421,7 +486,7 @@
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
                 console.log('/api/submititem:');
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
                 vm.$set(vm, 'task', {
                   price: 0.07,
@@ -442,7 +507,7 @@
                 +'&task='+encodeURIComponent(JSON.stringify(this.task));
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 console.log('/api/submittask:');
                 vm.step = 'success';
               });
