@@ -273,36 +273,25 @@
               </div>
             </div>
 
-            <!-- 充值 -->
-            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='recharge'">
-              <div class="input-group">
-                <span class="input-group-addon">旧密码</span>
-                <input type="password" class="form-control" v-model="oldpassword">
-              </div>
-              <br>
-              <div class="input-group">
-                <span class="input-group-addon">新密码</span>
-                <input type="password" class="form-control" v-model="newpassword">
-              </div>
-              <br>
-              <div class="input-group">
-                <span class="input-group-addon">确认新密码</span>
-                <input type="password" class="form-control" v-model="confirmnewpassword">
-              </div>
-              <br>
-              <button type="button btn-primary" class="form-control" @click="changepassword">确认</button>
-            </div>
-
-            <!-- changePassword -->
-            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='changepassword'">
+            <!-- 我的余额 -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='mymoney'">
               <div class="input-group">
                 <span class="input-group-addon">账户余额</span>
                 <input type="text" class="form-control" v-model="user.money" readonly>
               </div>
               <br>
-              <button type="button btn-primary" class="form-control" @click="recharge">充值</button>
+              <p>使用支付宝扫一扫下方二维码，向137000000(xxx)转账付款</p>
+              <p>将转账后的订单号复制到下方编辑框中，点击提交即可充值。如遇问题，请联系客服</p>
+              <div class="input-group">
+                <span class="input-group-addon">支付宝订单号</span>
+                <input type="text" class="form-control" id="rechargebill">
+              </div>
               <br>
+              <button type="button btn-primary" class="form-control" @click="recharge">提交订单号</button>
+            </div>
 
+            <!-- changePassword -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='changepassword'">
               <div class="input-group">
                 <span class="input-group-addon">旧密码</span>
                 <input type="password" class="form-control" v-model="oldpassword">
@@ -447,10 +436,16 @@
               this.step = 'parseurl';
             },
             stepMyMoney: function() {
-              this.step1 = 'mymoney';
+              // 从服务器获取账户余额
+              vm = this;
+              $.getJSON('/api/users/userinfo', function(data) {
+                vm.user.isadmin = data.isadmin;
+                vm.user.money = data.money;
+                vm.step1 = 'mymoney';
+              });
             },
             stepChangePassword: function() {
-              this.step1 = 'changepassword'
+              this.step1 = 'changepassword';
             },
             stepUserList: function() {},
             stepNewUser: function() {},
@@ -546,9 +541,12 @@
               });
             },
 
-            // 充值 recharge
+            // 提交充值的支付宝单号 recharge
             recharge: function () {
-              // TODO 弹框出来显示如何充值
+              $.getJSON('/api/users/recharge?bill='+$('#rechargebill').val(), function(data) {
+                // TODO 充值
+                console.log('充值结果:' + data);
+              });
             },
 
             // changePassword

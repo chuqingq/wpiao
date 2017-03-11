@@ -33,6 +33,7 @@ func main() {
 	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
 
+	http.HandleFunc("/api/users/userinfo", UserInfoHandle)
 	http.HandleFunc("/api/users/changepassword", ChangePasswordHandle)
 
 	http.HandleFunc("/api/users", UsersHandle)
@@ -382,6 +383,40 @@ func RunnerVote(w http.ResponseWriter, r *http.Request) {
 func WsWeb(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/ws/web")
 	// TODO
+}
+
+func UserInfoHandle(w http.ResponseWriter, r *http.Request) {
+	log.Println("/api/users/userinfo:")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	res := map[string]interface{}{}
+	res["username"] = user.UserName
+	res["isadmin"] = user.IsAdmin
+	res["money"] = strconv.FormatFloat(user.Balance, 'f', 2, 32)
+	by, _ := json.Marshal(res)
+	w.Write(by)
+}
+
+func UserInfoHandle(w http.ResponseWriter, r *http.Request) {
+	log.Println("/api/users/recharge:")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	bill := r.FormValue("bill")
+	if bill == "" {
+		log.Printf("oldpassword is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// TODO 检查单号是否存在，确定是否充值成功
 }
 
 func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
