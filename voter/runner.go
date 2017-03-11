@@ -8,10 +8,10 @@ import (
 )
 
 type Runner struct {
-	Name         string `json:"pc"`
-	AccountCount int    `json:"account_count"`
+	Name         string `json:"name"`
+	AccountCount int    `json:"accounts"`
 	Conn         *websocket.Conn
-	Addr         string
+	Addr         string `json:"addr"`
 }
 
 // 全局变量。有哪些PC已连上来

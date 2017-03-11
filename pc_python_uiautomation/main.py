@@ -37,7 +37,7 @@ def on_open(ws):
     print('on_open: ')
     # 发送当前微信账号数量
     # {"pc": "wp-001", "account_count": 10}
-    res = {"cmd": "login", "pc": socket.getfqdn(), "account_count": len(vote.handleDict)}
+    res = {"cmd": "login", "name": socket.getfqdn(), "accounts": len(vote.handleDict)}
     print("login: ", res)
     ws.send(json.dumps(res))
     # def run(*args):

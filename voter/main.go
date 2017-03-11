@@ -41,6 +41,8 @@ func main() {
 	http.HandleFunc("/api/users", UsersHandle)
 	http.HandleFunc("/api/newuser", NewUser)
 
+	http.HandleFunc("/api/runners", RunnersHandle)
+
 	// TODO websocket1: /api/ws/runner PC端连接，下发任务
 	http.HandleFunc("/api/ws/runner", WsRunner)
 	http.HandleFunc("/api/vote", RunnerVote)
@@ -479,14 +481,14 @@ func UsersHandle(w http.ResponseWriter, r *http.Request) {
 	users, err := user.QueryAllUsers()
 	if err != nil {
 		log.Printf("QueryAllUsers error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "查询数据库错误"}`))
 		return
 	}
 
 	by, err := json.Marshal(users)
 	if err != nil {
 		log.Printf("marshal users(%v) error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "格式错误"}`))
 		return
 	}
 
@@ -535,4 +537,28 @@ func NewUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("{}"))
+}
+
+func RunnersHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/runners")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		errStr := "你不是管理员，只有管理员才能查看执行器列表"
+		w.Write([]byte(`{"error": "` + errStr + `"}`))
+		return
+	}
+
+	by, err := json.Marshal(gRunners)
+	if err != nil {
+		log.Printf("gRunners (%v) 格式化失败: %v", err)
+		w.Write([]byte(`{"error": "格式错误"}`))
+		return
+	}
+
+	w.Write(by)
 }

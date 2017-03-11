@@ -112,9 +112,9 @@
             </ul>
             <!-- 管理员 -->
             <ul class="nav nav-sidebar" v-if="user.isadmin">
-              <li><a href="#" @click="stepUserList">用户列表</a></li>
-              <li><a href="#" @click="stepNewUser">新增用户</a></li>
-              <li><a href="#" @click="stepRunnerList">Runner列表</a></li>
+              <li v-bind:class="{active: step1=='userlist'}"><a href="#" @click="stepUserList">用户列表</a></li>
+              <li v-bind:class="{active: step1=='newuser'}"><a href="#" @click="stepNewUser">新增用户</a></li>
+              <li v-bind:class="{active: step1=='runnerlist'}"><a href="#" @click="stepRunnerList">Runner列表</a></li>
             </ul>
           </div>
 
@@ -284,13 +284,13 @@
               <p>将转账后的订单号复制到下方编辑框中，点击提交即可充值。如遇问题，请联系客服</p>
               <div class="input-group">
                 <span class="input-group-addon">支付宝订单号</span>
-                <input type="text" class="form-control" id="rechargebill" value="">
+                <input type="text" class="form-control" id="rechargebill" placeholder="请输入支付宝订单编号">
               </div>
               <br>
               <button type="button btn-primary" class="form-control" @click="recharge">提交订单号</button>
             </div>
 
-            <!-- changePassword -->
+            <!-- 修改密码 changePassword -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='changepassword'">
               <div class="input-group">
                 <span class="input-group-addon">旧密码</span>
@@ -308,6 +308,57 @@
               </div>
               <br>
               <button type="button btn-primary" class="form-control" @click="changepassword">确认</button>
+            </div>
+
+            <!-- 管理员 用户列表 userlist -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='userlist'">
+              <div class="panel panel-primary">
+                <div class="panel-heading">用户列表</div>
+                <table class="table table-condensed">
+                  <thead>
+                    <tr>
+                      <th>用户名</th>
+                      <th>密码</th>
+                      <th>是否管理员</th>
+                      <th>余额</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(user, index) in users">
+                      <td>{{user.username}}</td>
+                      <td>{{user.password}}</td>
+                      <td>{{user.isadmin}}</td>
+                      <td>{{user.balance}}</td>
+                      <td>todo</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 管理员 执行器列表 runnerlist -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='runnerlist'">
+              <div class="panel panel-primary">
+                <div class="panel-heading">runner列表</div>
+                <table class="table table-condensed">
+                  <thead>
+                    <tr>
+                      <th>名称</th>
+                      <th>账号数</th>
+                      <th>地址</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(runner, index) in runners">
+                      <td>{{runner.name}}</td>
+                      <td>{{runner.accounts}}</td>
+                      <td>{{runner.addr}}</td>
+                      <td>todo</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -369,6 +420,12 @@
             voteinfo: voteInfo, // 投票信息，最初是null
             voteitem: null, // 投票对象
             task: {}, // 主备下发的任务
+
+            // 管理员
+            // 用户列表 userlist
+            users: [],
+            // 执行器列表 runnerlist
+            runners: [],
           },
           computed: {
             expireTime: function() {
@@ -447,9 +504,31 @@
             stepChangePassword: function() {
               this.step1 = 'changepassword';
             },
-            stepUserList: function() {},
-            stepNewUser: function() {},
-            stepRunnerList: function() {},
+            stepUserList: function() {
+              $.getJSON('/api/users', function(users) {
+                vm.step1 = 'userlist';
+                if (users.error) {
+                  console.log('获取用户列表失败：'+users.error);
+                  return;
+                }
+                vm.users = users;
+              })
+            },
+            stepNewUser: function() {
+              // TODO
+              vm.step1 = 'newuser';
+            },
+            stepRunnerList: function() {
+              // TODO
+              $.getJSON('/api/runners', function(runners) {
+                if (runners.error) {
+                  console.log('获取执行器失败：'+runners.error);
+                  return;
+                }
+                vm.runners = runners;
+              });
+              vm.step1 = 'runnerlist';
+            },
 
             // step2
             next: function() {
