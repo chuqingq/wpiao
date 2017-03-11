@@ -52,7 +52,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 	u = check(username, password, timestamp)
 	if u == nil {
 		// log.Printf("check user error")
-		w.Write([]byte(`{"ret":403,"msg":"username or password is invalid"}`))
+		w.Write([]byte(`{"error":"username or password is invalid"}`))
 		return nil
 	}
 

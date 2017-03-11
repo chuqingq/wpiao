@@ -323,7 +323,6 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 			// 需要根据完成情况做调整
 			TaskDispatch(msg["url"].(string))
 		}
-
 	}
 }
 
