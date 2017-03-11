@@ -273,8 +273,36 @@
               </div>
             </div>
 
+            <!-- 充值 -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='recharge'">
+              <div class="input-group">
+                <span class="input-group-addon">旧密码</span>
+                <input type="password" class="form-control" v-model="oldpassword">
+              </div>
+              <br>
+              <div class="input-group">
+                <span class="input-group-addon">新密码</span>
+                <input type="password" class="form-control" v-model="newpassword">
+              </div>
+              <br>
+              <div class="input-group">
+                <span class="input-group-addon">确认新密码</span>
+                <input type="password" class="form-control" v-model="confirmnewpassword">
+              </div>
+              <br>
+              <button type="button btn-primary" class="form-control" @click="changepassword">确认</button>
+            </div>
+
             <!-- changePassword -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='changepassword'">
+              <div class="input-group">
+                <span class="input-group-addon">账户余额</span>
+                <input type="text" class="form-control" v-model="user.money" readonly>
+              </div>
+              <br>
+              <button type="button btn-primary" class="form-control" @click="recharge">充值</button>
+              <br>
+
               <div class="input-group">
                 <span class="input-group-addon">旧密码</span>
                 <input type="password" class="form-control" v-model="oldpassword">
@@ -333,7 +361,10 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
-            user: {isadmin: false},
+            user: {
+              isadmin: false,
+              money: '',
+            },
 
             step1: 'tasklist', // 当前第一级步骤：tasklist任务列表，newtask新建任务
             tasks: [],
@@ -385,6 +416,7 @@
                   // window.location = '/index.html';
                   console.log('login success');
                   // vm.step1 = 'tasklist';
+                  vm.user.money = data.money;
                   vm.user.isadmin = !!data.isadmin;
                   vm.stepTaskList();
                 } else {
@@ -422,6 +454,7 @@
             },
             stepUserList: function() {},
             stepNewUser: function() {},
+            stepRunnerList: function() {},
 
             // step2
             next: function() {
@@ -511,6 +544,11 @@
                 console.log('/api/submittask:');
                 vm.step = 'success';
               });
+            },
+
+            // 充值 recharge
+            recharge: function () {
+              // TODO 弹框出来显示如何充值
             },
 
             // changePassword

@@ -60,7 +60,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(`{"ret":0,"msg":"login success", "isadmin": ` + strconv.FormatBool(user.IsAdmin) + `}`))
+	w.Write([]byte(`{"ret":0, "isadmin": ` + strconv.FormatBool(user.IsAdmin) + `, "money": "` + strconv.FormatFloat(user.Balance, 'f', 2, 64) + `"}`))
 }
 
 func TasksHandle(w http.ResponseWriter, r *http.Request) {
