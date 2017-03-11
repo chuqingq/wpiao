@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -182,4 +183,27 @@ func (users Users) GetUserByName(name string) *User {
 		}
 	}
 	return nil
+}
+
+func (user *User) Recharge(bill string) error {
+	// 先查询
+	recharges := []map[string]interface{}{}
+	err := MgoFind("weipiao", "recharge", bson.M{"bill": bill, "handled": false}, &recharges)
+	if err != nil {
+		return err
+	}
+
+	if len(recharges) < 1 {
+		return errors.New("没有找到订单号")
+	}
+	recharge := recharges[0]
+
+	// 再更新为已处理
+	err = MgoUpdate("weipiao", "recharge", bson.M{"bill": bill, "handled": false}, bson.M{"$set": bson.M{"handled": true}})
+	if err != nil {
+		return err
+	}
+
+	// 把订单额度加入账号
+	return user.SetBalance(user.Balance + recharge["money"].(float64))
 }

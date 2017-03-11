@@ -284,7 +284,7 @@
               <p>将转账后的订单号复制到下方编辑框中，点击提交即可充值。如遇问题，请联系客服</p>
               <div class="input-group">
                 <span class="input-group-addon">支付宝订单号</span>
-                <input type="text" class="form-control" id="rechargebill">
+                <input type="text" class="form-control" id="rechargebill" value="">
               </div>
               <br>
               <button type="button btn-primary" class="form-control" @click="recharge">提交订单号</button>
@@ -355,7 +355,7 @@
               money: '',
             },
 
-            step1: 'tasklist', // 当前第一级步骤：tasklist任务列表，newtask新建任务
+            step1: '', // 当前第一级步骤：tasklist任务列表，newtask新建任务
             tasks: [],
 
             // 修改密码
@@ -544,8 +544,13 @@
             // 提交充值的支付宝单号 recharge
             recharge: function () {
               $.getJSON('/api/users/recharge?bill='+$('#rechargebill').val(), function(data) {
-                // TODO 充值
-                console.log('充值结果:' + data);
+                if (data.error) {
+                  alert(data.error);
+                  return;
+                }
+                console.log('充值结果:' + JSON.stringify(data));
+                alert('充值成功！');
+                vm.user.money = data.money;
               });
             },
 
@@ -562,7 +567,7 @@
           }
         });
 
-        vm.stepTaskList();
+        vm.stepMyMoney();
       });
     </script>
   </body>

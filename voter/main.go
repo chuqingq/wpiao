@@ -34,6 +34,8 @@ func main() {
 	http.HandleFunc("/api/submittask", SubmitTask)
 
 	http.HandleFunc("/api/users/userinfo", UserInfoHandle)
+	http.HandleFunc("/api/users/recharge", UserRechargeHandle)
+	// TODO 需要有管理员或自动向recharge表中录入支付宝订单，包括单号、金额、未处理
 	http.HandleFunc("/api/users/changepassword", ChangePasswordHandle)
 
 	http.HandleFunc("/api/users", UsersHandle)
@@ -401,7 +403,7 @@ func UserInfoHandle(w http.ResponseWriter, r *http.Request) {
 	w.Write(by)
 }
 
-func UserInfoHandle(w http.ResponseWriter, r *http.Request) {
+func UserRechargeHandle(w http.ResponseWriter, r *http.Request) {
 	log.Println("/api/users/recharge:")
 
 	user := UserLogin(w, r)
@@ -411,12 +413,21 @@ func UserInfoHandle(w http.ResponseWriter, r *http.Request) {
 
 	bill := r.FormValue("bill")
 	if bill == "" {
-		log.Printf("oldpassword is empty")
-		w.WriteHeader(http.StatusBadRequest)
+		errstr := "订单号无效"
+		w.Write([]byte(`{"error": "` + errstr + `"}`))
+		// w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// TODO 检查单号是否存在，确定是否充值成功
+	err := user.Recharge(bill)
+	if err != nil {
+		errstr := "充值失败：" + err.Error()
+		log.Println(errstr)
+		// w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "` + errstr + `"}`))
+		return
+	}
+	w.Write([]byte(`{"money": "` + strconv.FormatFloat(user.Balance, 'f', 2, 64) + `"}`))
 }
 
 func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
