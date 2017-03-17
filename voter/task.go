@@ -36,12 +36,13 @@ type Task struct {
 	Supervoteid string                 `bson:"supervoteid"`
 	Info        map[string]interface{} `bson:"info"` // 投票信息。包括活动标题、到期时间、投票对象等
 	// Info     string `bson:"info"`
-	Item     string  `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
-	User     string  `bson:"user"`  // 下发任务的用户名
-	Votes    uint64  `bson:"votes"` // 票数
-	Price    float64 `bson:"price"` // 单价，单位是元/票
-	Speed    uint64  `bson:"speed"` // TODO 暂未使用。每分钟的票数
-	CurVotes uint64  `bson:"curvotes"`
+	Item        string  `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
+	User        string  `bson:"user"`  // 下发任务的用户名
+	Votes       uint64  `bson:"votes"` // 票数
+	Price       float64 `bson:"price"` // 单价，单位是元/票
+	Speed       uint64  `bson:"speed"` // TODO 暂未使用。每分钟的票数
+	CurVotes    uint64  `bson:"curvotes"`
+	RunnerCount int     `bson:""runnercount` // 在运行的runner数量
 }
 
 func GetKeyFromUrl(voteUrl string) string {
@@ -301,9 +302,23 @@ func (vi *Task) SetStatus(status string) error {
 	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
 }
 
-func (task *Task) DecrRunner() int {
+func (task *Task) DecrRunnerCount() int {
 	// TODO 原子-1并返回内容
-	return 0
+	err := MgoUpdate("weipiao", "task", bson.M{"_id": bson.ObjectId(task.Id)}, bson.M{"$inc": bson.M{"runnercount": -1}})
+	if err != nil {
+		log.Printf("DecrRunnerCount error: %v", err)
+		return -1
+	}
+	task2, err := QueryTaskById(task.Id.String())
+	if err != nil {
+		log.Printf("QueryTaskById error: %v", err)
+		return -1
+	}
+	return task2.RunnerCount
+}
+
+func (task *Task) SetRunnerCount(count int) error {
+	return MgoUpdate("weipiao", "task", bson.M{"_id": task.Id}, bson.M{"$set": bson.M{"runnercount": count}})
 }
 
 func jsonUnmarshal(data []byte, v interface{}) error {

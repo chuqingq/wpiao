@@ -10,6 +10,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+}
+
 func main() {
 	// mongo
 	err := InitMongo("127.0.0.1")

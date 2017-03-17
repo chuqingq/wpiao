@@ -105,7 +105,7 @@ func doDispatchTask(task *Task) {
 
 func (r *Runner) NotifyTaskFinish(task *Task) {
 	// 在数据库中标记该任务又结束了一个runner
-	runnerCount := task.DecrRunner() // 直接返回当前正在执行的runner数
+	runnerCount := task.DecrRunnerCount() // 直接返回当前正在执行的runner数
 	// 如果还有别的runner未结束，则继续等待，不做动作
 	if runnerCount > 0 {
 		log.Printf("该任务还有runner在运行，等待。。。")
