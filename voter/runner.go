@@ -83,7 +83,10 @@ func RunnersDispatchTask(task *Task) error {
 
 // RunnersDispatchTask和NotifyTaskFinish调用此方法分配给runner
 func doDispatchTask(task *Task) {
-	// TODO 把任务按比例分给runner
+	// 设置执行task的runner个数，标记何时结束
+	task.SetRunnerCount(len(gRunners))
+
+	// TODO 把任务按比例分给runner。目前是平均，还不支持按比例
 	//  根据当前curRunner和curIndex分配runner
 	votes := int(task.Votes - task.CurVotes)
 	vote1 := votes / len(gRunners)
@@ -91,36 +94,39 @@ func doDispatchTask(task *Task) {
 	index := 0
 	for _, r := range gRunners {
 		count := vote1
-		if index > vote2 {
+		if index < vote2 {
 			count += 1
 		}
-		// TODO 验证这种算法是否OK
+		// 经过验证，这种算法基本平均
 		r.DispatchTask(task, count)
 		index++
 	}
 }
 
 func (r *Runner) NotifyTaskFinish(task *Task) {
-	// TODO 在数据库中标记该任务又结束了一个runner
+	// 在数据库中标记该任务又结束了一个runner
 	runnerCount := task.DecrRunner() // 直接返回当前正在执行的runner数
 	// 如果还有别的runner未结束，则继续等待，不做动作
 	if runnerCount > 0 {
 		log.Printf("该任务还有runner在运行，等待。。。")
 		return
 	}
-	log.Printf("该任务runner均结束了")
+	log.Printf("该任务runner均结束")
 
 	// TODO 如果所有runner都结束了，判断是否要重新下发任务来补充差额
-	finish := true
+	finish := task.Votes <= task.CurVotes // 这种方式是不停的跑，知道票数OK
 	if !finish {
-		// 需要重新下发\
+		// 需要重新下发
 		doDispatchTask(task)
 		return
 	}
 
-	// TODO 如果不补充差额，则任务结束，返回差额
+	// 如果不补充差额，则任务结束，返回差额
 	task.SetStatus("finished")
-	// TODO 如果补充差额，则通过DoDispatchTask(task)来补充差额
+	if task.Votes <= task.CurVotes {
+		return
+	}
+	// 如果补充差额，则通过DoDispatchTask(task)来补充差额
 	user := gUsers.GetUserByName(task.User)
 	err := user.SetBalance(user.Balance + float64(task.Votes-task.CurVotes)*task.Price)
 	if err != nil {
