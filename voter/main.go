@@ -251,21 +251,22 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 
 	// 处理任务
-	runnerCount := len(gRunners)
-	if runnerCount == 0 {
-		log.Printf("ERROR runner not found")
-		return
-	}
+	RunnersDispatchTask(taskStruct)
+	// runnerCount := len(gRunners)
+	// if runnerCount == 0 {
+	// 	log.Printf("ERROR runner not found")
+	// 	return
+	// }
 
-	runner := GetFreeRunner(key)
-	if runner == nil {
-		log.Printf("ERROR GetFreeRunner returns nil runner")
-		return
-	}
+	// runner := GetFreeRunner(key)
+	// if runner == nil {
+	// 	log.Printf("ERROR GetFreeRunner returns nil runner")
+	// 	return
+	// }
 
-	runner.DispatchTask(taskStruct)
+	// runner.DispatchTask(taskStruct)
 
-	log.Printf("dispatch task(%v,%v) to executer(%v)", taskStruct.Url, taskStruct.Votes, runner.Conn.RemoteAddr().String())
+	// log.Printf("dispatch task(%v,%v) to executer(%v)", taskStruct.Url, taskStruct.Votes, runner.Conn.RemoteAddr().String())
 }
 
 var upgrader = websocket.Upgrader{
@@ -289,6 +290,7 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 	// gWsConns[addr] = ws
 	// defer delete(gWsConns, addr)
 
+	var runner *Runner
 	for {
 		msgtype, msgBytes, err := ws.ReadMessage()
 		if err != nil {
@@ -305,7 +307,7 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if msg["cmd"].(string) == "login" {
-			runner := &Runner{
+			runner = &Runner{
 				Conn: ws,
 				Addr: addr,
 			}
@@ -321,7 +323,15 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 		} else if msg["cmd"].(string) == "vote_finish" {
 			log.Printf("runner vote finish: %v,%+v", addr, msg)
 			// 需要根据完成情况做调整
-			TaskDispatch(msg["url"].(string))
+			// TaskDispatch(msg["url"].(string))
+			task, err := QueryTaskById(msg["taskid"].(string))
+			if err != nil {
+				log.Printf("根据taskId获取任务失败：%v, %v", msg["taskid"], err)
+				continue
+			}
+			// RunnersDispatchTask(task)
+			// 通知runner这个任务已经结束，可能需要补票或者退款
+			runner.NotifyTaskFinish(task)
 		}
 	}
 }
@@ -449,7 +459,7 @@ func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO 没使用旧
+	// TODO 没使用旧密码
 	err := user.ChangePassword(newpass)
 	if err != nil {
 		log.Printf("修改密码失败: %v", err)

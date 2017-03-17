@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -62,30 +63,86 @@ func GetFreeRunner(key string) *Runner {
 	return nil
 }
 
-func (r *Runner) DispatchTask(task *Task) {
-	votes := task.Votes - task.CurVotes
-	if votes <= 0 {
-		return
-	}
-
-	// 检查用户余额是否足够
+// main调用此方法首次下发任务
+func RunnersDispatchTask(task *Task) error {
+	// 先扣除费用。可能失败
 	user := gUsers.GetUserByName(task.User)
 	if user.Balance < float64(task.Votes)*task.Price {
 		log.Println("用户 %s 余额不足: %f < %d*%f", task.User, user.Balance, task.Votes, task.Price)
-		return
+		return errors.New("任务下发失败：账户余额不足")
 	}
 	err := user.SetBalance(user.Balance - float64(task.Votes)*task.Price)
 	if err != nil {
 		log.Println("计费失败: %v", err)
+		return errors.New("任务下发失败：内部错误：计费失败")
+	}
+
+	doDispatchTask(task)
+	return nil
+}
+
+// RunnersDispatchTask和NotifyTaskFinish调用此方法分配给runner
+func doDispatchTask(task *Task) {
+	// TODO 把任务按比例分给runner
+	//  根据当前curRunner和curIndex分配runner
+	votes := int(task.Votes - task.CurVotes)
+	vote1 := votes / len(gRunners)
+	vote2 := votes % len(gRunners)
+	index := 0
+	for _, r := range gRunners {
+		count := vote1
+		if index > vote2 {
+			count += 1
+		}
+		// TODO 验证这种算法是否OK
+		r.DispatchTask(task, count)
+		index++
+	}
+}
+
+func (r *Runner) NotifyTaskFinish(task *Task) {
+	// TODO 在数据库中标记该任务又结束了一个runner
+	runnerCount := task.DecrRunner() // 直接返回当前正在执行的runner数
+	// 如果还有别的runner未结束，则继续等待，不做动作
+	if runnerCount > 0 {
+		log.Printf("该任务还有runner在运行，等待。。。")
+		return
+	}
+	log.Printf("该任务runner均结束了")
+
+	// TODO 如果所有runner都结束了，判断是否要重新下发任务来补充差额
+	finish := true
+	if !finish {
+		// 需要重新下发\
+		doDispatchTask(task)
+		return
+	}
+
+	// TODO 如果不补充差额，则任务结束，返回差额
+	task.SetStatus("finished")
+	// TODO 如果补充差额，则通过DoDispatchTask(task)来补充差额
+	user := gUsers.GetUserByName(task.User)
+	err := user.SetBalance(user.Balance + float64(task.Votes-task.CurVotes)*task.Price)
+	if err != nil {
+		log.Println("退款失败: %v", err)
+		return
+	}
+}
+
+func (r *Runner) DispatchTask(task *Task, votes int) {
+	// votes := task.Votes - task.CurVotes
+	if votes <= 0 {
 		return
 	}
 
 	req := map[string]interface{}{}
 	req["cmd"] = "vote"
 	req["url"] = task.Url
+	// TODO pc那边需要保存这个taskid，且在任务结束时返回
+	req["taskid"] = task.Id
 	req["votes"] = votes
 
-	err = r.Conn.WriteJSON(req)
+	err := r.Conn.WriteJSON(req)
 	if err != nil {
 		log.Printf("ws.WriteJSON error: %v", err)
 	}

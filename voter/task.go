@@ -208,6 +208,21 @@ func QueryTasksByUser(username string) ([]*Task, error) {
 	return task, nil
 }
 
+func QueryTaskById(taskId string) (*Task, error) {
+	var tasks []*Task
+	err := MgoFind("weipiao", "task", bson.M{"_id": bson.ObjectId(taskId)}, &tasks)
+	if err != nil {
+		log.Printf("MgoFind(task) error: %v", err)
+		return nil, err
+	}
+
+	if len(tasks) == 0 {
+		return nil, errors.New("task not found by key")
+	}
+
+	return tasks[0], nil
+}
+
 func QueryTaskByKey(key string) (*Task, error) {
 	var task []*Task
 	err := MgoFind("weipiao", "task", bson.M{"key": key, "status": "doing"}, &task)
@@ -286,36 +301,45 @@ func (vi *Task) SetStatus(status string) error {
 	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
 }
 
+func (task *Task) DecrRunner() int {
+	// TODO 原子-1并返回内容
+	return 0
+}
+
 func jsonUnmarshal(data []byte, v interface{}) error {
 	d := json.NewDecoder(bytes.NewReader(data))
 	d.UseNumber()
 	return d.Decode(v)
 }
 
-// 一个PC完成后根据url做调整
-func TaskDispatch(voteUrl string) error {
-	log.Printf("TaskDispatch: url: %v", voteUrl)
+// // 一个PC完成后根据url做调整
+// func TaskDispatch(voteUrl string) error {
+// 	log.Printf("TaskDispatch: url: %v", voteUrl)
 
-	var tasks []*Task
-	err := MgoFind("weipiao", "task", bson.M{"url": voteUrl, "status": "doing"}, &tasks)
-	if err != nil {
-		log.Printf("MgoFind(task) error: %v", err)
-		return err
-	}
+// 	var tasks []*Task
+// 	err := MgoFind("weipiao", "task", bson.M{"url": voteUrl, "status": "doing"}, &tasks)
+// 	if err != nil {
+// 		log.Printf("MgoFind(task) error: %v", err)
+// 		return err
+// 	}
 
-	if len(tasks) == 0 {
-		return errors.New("task not found: url: " + voteUrl)
-	}
+// 	if len(tasks) == 0 {
+// 		return errors.New("task not found: url: " + voteUrl)
+// 	}
 
-	task := tasks[0]
-	if task.Status == "doing" {
-		r := GetFreeRunner(task.Key) // TODO 还是要保证db.task中记录是有key的
-		if r == nil {
-			log.Printf("TaskDispatch: no free runner: %v", task.Key)
-			return errors.New("TaskDispatch: no free runner")
-		}
-		r.DispatchTask(task)
-	}
+// 	task := tasks[0]
+// 	if task.Status != "doing" {
+// 		return nil
+// 	}
 
-	return nil
-}
+// 	if task.Status == "doing" {
+// 		r := GetFreeRunner(task.Key) // TODO 还是要保证db.task中记录是有key的
+// 		if r == nil {
+// 			log.Printf("TaskDispatch: no free runner: %v", task.Key)
+// 			return errors.New("TaskDispatch: no free runner")
+// 		}
+// 		r.DispatchTask(task)
+// 	}
+
+// 	return nil
+// }
