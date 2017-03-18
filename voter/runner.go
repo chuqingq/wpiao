@@ -114,7 +114,8 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 	log.Printf("该任务runner均结束")
 
 	// TODO 如果所有runner都结束了，判断是否要重新下发任务来补充差额
-	finish := task.Votes <= task.CurVotes // 这种方式是不停的跑，知道票数OK
+	// finish := task.Votes <= task.CurVotes // 这种方式是不停的跑，知道票数OK
+	finish := true // 这种方式是只下发一次
 	if !finish {
 		// 需要重新下发
 		doDispatchTask(task)

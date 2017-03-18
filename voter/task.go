@@ -210,8 +210,9 @@ func QueryTasksByUser(username string) ([]*Task, error) {
 }
 
 func QueryTaskById(taskId string) (*Task, error) {
+	log.Printf("QueryTaskById(): %v", taskId)
 	var tasks []*Task
-	err := MgoFind("weipiao", "task", bson.M{"_id": bson.ObjectId(taskId)}, &tasks)
+	err := MgoFind("weipiao", "task", bson.M{"_id": bson.ObjectIdHex(taskId)}, &tasks)
 	if err != nil {
 		log.Printf("MgoFind(task) error: %v", err)
 		return nil, err
@@ -309,7 +310,7 @@ func (task *Task) DecrRunnerCount() int {
 		log.Printf("DecrRunnerCount error: %v", err)
 		return -1
 	}
-	task2, err := QueryTaskById(task.Id.String())
+	task2, err := QueryTaskById(task.Id.Hex())
 	if err != nil {
 		log.Printf("QueryTaskById error: %v", err)
 		return -1
