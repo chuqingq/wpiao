@@ -106,9 +106,14 @@ func doDispatchTask(task *Task) {
 
 func (r *Runner) NotifyTaskFinish(task *Task) {
 	// 在数据库中标记该任务又结束了一个runner
-	runnerCount := task.DecrRunnerCount() // 直接返回当前正在执行的runner数
+	// runnerCount := task.DecrRunnerCount() // 直接返回当前正在执行的runner数
+	err := task.DecrRunnerCount()
+	if err != nil {
+		log.Printf("NotifyTaskFinish task.DecrRunnerCount() error: %v", err)
+		return
+	}
 	// 如果还有别的runner未结束，则继续等待，不做动作
-	if runnerCount > 0 {
+	if task.RunnerCount > 0 {
 		log.Printf("该任务还有runner在运行，等待。。。")
 		return
 	}
@@ -126,11 +131,14 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 	// 如果不补充差额，则任务结束，返回差额
 	task.SetStatus("finished")
 	if task.Votes <= task.CurVotes {
+		log.Printf("任务已完成，无需退款: %v < %v", task.Votes, task.CurVotes)
 		return
 	}
 	// 如果补充差额，则通过DoDispatchTask(task)来补充差额
 	user := gUsers.GetUserByName(task.User)
-	err := user.SetBalance(user.Balance + float64(task.Votes-task.CurVotes)*task.Price)
+	tuikuan := float64(task.Votes-task.CurVotes) * task.Price
+	log.Printf("需退款：%v", tuikuan)
+	err = user.SetBalance(user.Balance + tuikuan)
 	if err != nil {
 		log.Println("退款失败: %v", err)
 		return

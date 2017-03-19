@@ -11,22 +11,24 @@ import (
 	"net/url"
 	"strings"
 
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type Tasks map[string]*Task
+// // key -> task
+// type Tasks map[string]*Task
 
-func (vis Tasks) Get(key string) *Task {
-	return vis[key]
-}
+// func (vis Tasks) Get(key string) *Task {
+// 	return vis[key]
+// }
 
-func (vis Tasks) Set(key string, vi *Task) {
-	vis[key] = vi
-}
+// func (vis Tasks) Set(key string, vi *Task) {
+// 	vis[key] = vi
+// }
 
-func (vis Tasks) Del(key string) {
-	delete(vis, key)
-}
+// func (vis Tasks) Del(key string) {
+// 	delete(vis, key)
+// }
 
 type Task struct {
 	Id          bson.ObjectId          `bson:"_id"`
@@ -303,19 +305,34 @@ func (vi *Task) SetStatus(status string) error {
 	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
 }
 
-func (task *Task) DecrRunnerCount() int {
-	// TODO 原子-1并返回内容
-	err := MgoUpdate("weipiao", "task", bson.M{"_id": bson.ObjectId(task.Id)}, bson.M{"$inc": bson.M{"runnercount": -1}})
-	if err != nil {
-		log.Printf("DecrRunnerCount error: %v", err)
-		return -1
+func (task *Task) DecrRunnerCount() error {
+	// 原子-1并返回内容
+	session := mongoSession.Clone()
+	defer session.Close()
+	c := session.DB("weipiao").C("task")
+
+	change := mgo.Change{
+		Update:    bson.M{"$inc": bson.M{"runnercount": -1}},
+		ReturnNew: true,
 	}
-	task2, err := QueryTaskById(task.Id.Hex())
+	// var task2 Task
+	_, err := c.Find(bson.M{"_id": bson.ObjectId(task.Id)}).Apply(change, &task)
 	if err != nil {
-		log.Printf("QueryTaskById error: %v", err)
-		return -1
+		log.Printf("DecrRunnerCount change error: %v", err)
+		return err
 	}
-	return task2.RunnerCount
+	log.Printf("new runnercount: %v", task.RunnerCount)
+	// err := MgoUpdate("weipiao", "task", bson.M{"_id": bson.ObjectId(task.Id)}, bson.M{"$inc": bson.M{"runnercount": -1}})
+	// if err != nil {
+	// 	log.Printf("DecrRunnerCount error: %v", err)
+	// 	return -1
+	// }
+	// task2, err := QueryTaskById(task.Id.Hex())
+	// if err != nil {
+	// 	log.Printf("QueryTaskById error: %v", err)
+	// 	return -1
+	// }
+	return nil
 }
 
 func (task *Task) SetRunnerCount(count int) error {
