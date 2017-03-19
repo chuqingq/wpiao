@@ -30,6 +30,6 @@ func main() {
 	ioutil.WriteFile(FILE_NAME, []byte(str), 0666)
 
 	// 请求通过http发送给
-	reqUrl := `http://127.0.0.1:8080/api/vote?url=` + url.QueryEscape(voteUrl)
+	reqUrl := `http://192.168.31.72:8080/api/vote?url=` + url.QueryEscape(voteUrl)
 	http.Get(reqUrl)
 }
