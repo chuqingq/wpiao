@@ -51,7 +51,7 @@ def on_open(ws):
 
 def start_websocket():
     websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://127.0.0.1:8080/api/ws/runner",
+    ws = websocket.WebSocketApp("ws:/192.168.31.72:8080/api/ws/runner",
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)
