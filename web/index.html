@@ -140,7 +140,7 @@
                       <td>{{task.curvotes}}</td>
                       <td>
                         <div class="progress">
-                          <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{task.curvotes*100/task.votes}}%</div>
+                          <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{(task.curvotes*100/task.votes).toFixed(2)}}%</div>
                         </div>
                       </td>
                     </tr>
