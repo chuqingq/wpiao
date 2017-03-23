@@ -84,6 +84,7 @@ func TasksHandle(w http.ResponseWriter, r *http.Request) {
 		task["title"] = info.Info["title"]
 		task["votes"] = info.Votes
 		task["curvotes"] = info.CurVotes
+		task["status"] = info.Status
 		tasks = append(tasks, task)
 	}
 	log.Printf("tasks: %+v", tasks)

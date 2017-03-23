@@ -130,6 +130,7 @@
                       <th>任务票数</th>
                       <th>当前票数</th>
                       <th>进度</th>
+                      <th>状态</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -143,6 +144,7 @@
                           <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{(task.curvotes*100/task.votes).toFixed(2)}}%</div>
                         </div>
                       </td>
+                      <td>{{task.status=='doing'?'进行中':'已结束'}}</td>
                     </tr>
                   </tbody>
                 </table>
