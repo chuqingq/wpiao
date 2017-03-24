@@ -133,8 +133,8 @@
             <!-- 新任务 newtask -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='newtask'">
               <div v-if="step=='parseurl'" class="input-group">
-                <span class="input-group-addon">投票地址</span>
-                <input type="text" class="form-control" placeholder="请输入投票地址" v-model="url">
+                <span class="input-group-addon">投票地址（短连接）</span>
+                <input type="text" class="form-control" placeholder="请输入投票地址（短连接）" v-model="url">
               </div>
 
               <div v-if="step=='selectvote'">
@@ -653,7 +653,7 @@
                 if (!vm.checklogin(data)) return;
                 // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
                 vm.$set(vm, 'task', {
-                  price: 0.07,
+                  price: 0.10,
                   votes: 1,
                   votespermin: 1,
                 });

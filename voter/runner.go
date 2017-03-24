@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
@@ -127,6 +128,8 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 		doDispatchTask(task)
 		return
 	}
+
+	time.Sleep(5 * time.Second)
 
 	// 如果不补充差额，则任务结束，返回差额
 	task.SetStatus("finished")
