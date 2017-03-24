@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"time"
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -38,13 +39,15 @@ type Task struct {
 	Supervoteid string                 `bson:"supervoteid"`
 	Info        map[string]interface{} `bson:"info"` // 投票信息。包括活动标题、到期时间、投票对象等
 	// Info     string `bson:"info"`
-	Item        string  `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
-	User        string  `bson:"user"`  // 下发任务的用户名
-	Votes       uint64  `bson:"votes"` // 票数
-	Price       float64 `bson:"price"` // 单价，单位是元/票
-	Speed       uint64  `bson:"speed"` // TODO 暂未使用。每分钟的票数
-	CurVotes    uint64  `bson:"curvotes"`
-	RunnerCount int     `bson:""runnercount` // 在运行的runner数量
+	Item        string    `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
+	User        string    `bson:"user"`  // 下发任务的用户名
+	Votes       uint64    `bson:"votes"` // 票数
+	Price       float64   `bson:"price"` // 单价，单位是元/票
+	Speed       uint64    `bson:"speed"` // TODO 暂未使用。每分钟的票数
+	CurVotes    uint64    `bson:"curvotes"`
+	RunnerCount int       `bson:"runnercount"` // 在运行的runner数量
+	CreateTime  time.Time `bson:"createtime"`
+	FinishTime  time.Time `bsoin:"finishtime"`
 }
 
 func GetKeyFromUrl(voteUrl string) string {
@@ -194,11 +197,29 @@ func (vi *Task) Insert() error {
 	return MgoInsert("weipiao", "task", vi)
 }
 
-// 提交任务
-func (vi *Task) Submit() error {
-	// update votes/item等字段 TODO
-	return MgoInsert("weipiao", "task", vi)
+// 给前端输出的任务信息
+func tasksToArray(voteInfos []*Task) []map[string]interface{} {
+	tasks := []map[string]interface{}{}
+	for _, info := range voteInfos {
+		task := map[string]interface{}{}
+		task["title"] = info.Info["title"]
+		task["votes"] = info.Votes
+		task["curvotes"] = info.CurVotes
+		task["status"] = info.Status
+		task["createtime"] = info.CreateTime.Format("2006-01-02 15:04:05")
+		task["finishtime"] = info.FinishTime.Format("2006-01-02 15:04:05")
+		tasks = append(tasks, task)
+	}
+
+	return tasks
 }
+
+// 提交任务
+// func (vi *Task) Submit() error {
+// 	// update votes/item等字段 TODO
+// 	vi.CreateTime = time.Now()
+// 	return MgoInsert("weipiao", "task", vi)
+// }
 
 func QueryTasksByUser(username string) ([]*Task, error) {
 	var task []*Task
@@ -298,6 +319,11 @@ func (vi *Task) DecrVotes() error {
 	log.Printf("task status: doing, %v", vi.Id)
 	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
+}
+
+func (vi *Task) SetFinishTime(finishtime time.Time) error {
+	vi.FinishTime = finishtime
+	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"finishtime": vi.FinishTime}})
 }
 
 func (vi *Task) SetStatus(status string) error {

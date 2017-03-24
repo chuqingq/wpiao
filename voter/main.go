@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
@@ -22,6 +23,7 @@ func main() {
 	}
 
 	http.HandleFunc("/api/login", Login)
+	http.HandleFunc("/api/logout", Logout)
 	http.HandleFunc("/api/tasks", TasksHandle)
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submititem", SubmitItem)
@@ -65,6 +67,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"ret":0, "isadmin": ` + strconv.FormatBool(user.IsAdmin) + `, "money": "` + strconv.FormatFloat(user.Balance, 'f', 2, 64) + `"}`))
 }
 
+func Logout(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/logout:")
+
+	passwordCookie := &http.Cookie{
+		Name:   "wp_password",
+		Value:  "",
+		MaxAge: 0, // 单位：秒。
+	}
+	http.SetCookie(w, passwordCookie)
+
+	w.Write([]byte(`{}`))
+}
+
 func TasksHandle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/tasks:")
 
@@ -92,21 +107,6 @@ func TasksHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(tasksBytes)
-}
-
-// 给前端输出的任务信息
-func tasksToArray(voteInfos []*Task) []map[string]interface{} {
-	tasks := []map[string]interface{}{}
-	for _, info := range voteInfos {
-		task := map[string]interface{}{}
-		task["title"] = info.Info["title"]
-		task["votes"] = info.Votes
-		task["curvotes"] = info.CurVotes
-		task["status"] = info.Status
-		tasks = append(tasks, task)
-	}
-
-	return tasks
 }
 
 // 根据url解析出投票信息
@@ -248,12 +248,13 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		Key:  key,
 		Info: info,
 		// Item:   item,
-		Item:   itemStr,
-		User:   user.UserName,
-		Votes:  uint64(votes),
-		Price:  price,
-		Speed:  uint64(speed),
-		Status: "doing",
+		Item:       itemStr,
+		User:       user.UserName,
+		Votes:      uint64(votes),
+		Price:      price,
+		Speed:      uint64(speed),
+		Status:     "doing",
+		CreateTime: time.Now(),
 	}
 
 	// 写到数据库中

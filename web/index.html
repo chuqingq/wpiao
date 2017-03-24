@@ -85,6 +85,7 @@
             <ul class="nav nav-sidebar">
               <li v-bind:class="{active: step1=='mymoney'}"><a href="#" @click="stepMyMoney">我的余额</a></li>
               <li v-bind:class="{active: step1=='changepassword'}"><a href="#" @click="stepChangePassword">修改密码</a></li>
+              <li v-bind:class="{active: step1=='logout'}"><a href="#" @click="stepLogout">退出</a></li>
             </ul>
             <!-- 管理员 -->
             <ul class="nav nav-sidebar" v-if="user.isadmin">
@@ -110,6 +111,8 @@
                       <th>当前票数</th>
                       <th>进度</th>
                       <th>状态</th>
+                      <th>开始时间</th>
+                      <th>结束时间</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -124,6 +127,8 @@
                         </div>
                       </td>
                       <td>{{task.status=='doing'?'进行中':'已结束'}}</td>
+                      <td>{{task.createtime}}</td>
+                      <td>{{task.finishtime}}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -331,6 +336,8 @@
                         <th>当前票数</th>
                         <th>进度</th>
                         <th>状态</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -345,6 +352,8 @@
                           </div>
                         </td>
                         <td>{{task.status=='doing'?'进行中':'已结束'}}</td>
+                        <td>{{task.createtime}}</td>
+                        <td>{{task.finishtime}}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -446,7 +455,7 @@
             confirmnewpassword: '',
 
             step: 'parseurl', // 当前第二级步骤：parseurl、submititem、submittask
-            url: '', // 方便调试
+            url: '', // 方便调试: http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w
             key: '',
             voteinfo: voteInfo, // 投票信息，最初是null
             voteitem: null, // 投票对象
@@ -549,6 +558,10 @@
             },
             stepChangePassword: function() {
               this.step1 = 'changepassword';
+            },
+            stepLogout: function() {
+              this.step1 = 'login';
+              $.getJSON('/api/logout', function() {});
             },
             stepUserList: function() {
               $.getJSON('/api/users', function(users) {

@@ -132,6 +132,7 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 	time.Sleep(5 * time.Second)
 
 	// 如果不补充差额，则任务结束，返回差额
+	task.SetFinishTime(time.Now())
 	task.SetStatus("finished")
 	if task.Votes <= task.CurVotes {
 		log.Printf("任务已完成，无需退款: %v < %v", task.Votes, task.CurVotes)
