@@ -33,6 +33,7 @@ func main() {
 	http.HandleFunc("/api/users/changepassword", ChangePasswordHandle)
 
 	http.HandleFunc("/api/users", UsersHandle)
+	http.HandleFunc("/api/usertasks", UserTasksHandle)
 	http.HandleFunc("/api/newuser", NewUser)
 
 	http.HandleFunc("/api/runners", RunnersHandle)
@@ -78,15 +79,7 @@ func TasksHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks := []map[string]interface{}{}
-	for _, info := range voteInfos {
-		task := map[string]interface{}{}
-		task["title"] = info.Info["title"]
-		task["votes"] = info.Votes
-		task["curvotes"] = info.CurVotes
-		task["status"] = info.Status
-		tasks = append(tasks, task)
-	}
+	tasks := tasksToArray(voteInfos)
 	log.Printf("tasks: %+v", tasks)
 
 	tasksBytes, err := json.Marshal(tasks)
@@ -97,6 +90,21 @@ func TasksHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(tasksBytes)
+}
+
+// 给前端输出的任务信息
+func tasksToArray(voteInfos []*Task) []map[string]interface{} {
+	tasks := []map[string]interface{}{}
+	for _, info := range voteInfos {
+		task := map[string]interface{}{}
+		task["title"] = info.Info["title"]
+		task["votes"] = info.Votes
+		task["curvotes"] = info.CurVotes
+		task["status"] = info.Status
+		tasks = append(tasks, task)
+	}
+
+	return tasks
 }
 
 // 根据url解析出投票信息
@@ -493,6 +501,53 @@ func UsersHandle(w http.ResponseWriter, r *http.Request) {
 	by, err := json.Marshal(users)
 	if err != nil {
 		log.Printf("marshal users(%v) error: %v", err)
+		w.Write([]byte(`{"error": "格式错误"}`))
+		return
+	}
+
+	w.Write(by)
+}
+
+func UserTasksHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/usertasks")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		log.Printf("这个页面只有管理员有权查看")
+		w.Write([]byte(`{"error": "这个页面只有管理员有权查看"}`))
+		return
+	}
+
+	users, err := user.QueryAllUsers()
+	if err != nil {
+		log.Printf("QueryAllUsers error: %v", err)
+		w.Write([]byte(`{"error": "查询数据库错误"}`))
+		return
+	}
+
+	userTasks := map[string][]map[string]interface{}{}
+	for _, user := range users {
+		tasks, err := QueryTasksByUser(user.UserName)
+		if err != nil {
+			log.Printf("查询用户%v的任务时失败: %v", user.UserName, err)
+			w.Write([]byte(`{"error": "查询用户任务失败"}`))
+			return
+		}
+		tasks2 := tasksToArray(tasks)
+		userTasks[user.UserName] = tasks2
+	}
+
+	// res := map[string]interface{}{}
+	// res["users"] = users
+	// res["usertasks"] = userTasks
+
+	by, err := json.Marshal(userTasks)
+	if err != nil {
+		log.Printf("marshal res(%v) error: %v", err)
 		w.Write([]byte(`{"error": "格式错误"}`))
 		return
 	}

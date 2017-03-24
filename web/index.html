@@ -43,30 +43,13 @@
       <nav class="navbar navbar-inverse navbar-fixed-top">
         <div class="container-fluid">
           <div class="navbar-header">
-            <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-              <span class="sr-only">Toggle navigation</span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-            </button> -->
             <a class="navbar-brand">微票</a>
           </div>
-          <!-- <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right">
-              <li><a href="#" @click="stepTaskList">任务列表</a></li>
-              <li><a href="#" @click="stepNewTask">新建任务</a></li>
-              <li><a href="#" @click="stepUserList">用户列表</a></li>
-              <li><a href="#" @click="stepNewUser">新建用户</a></li>
-              <li><a href="#" @click="stepChangePassword">修改密码</a></li>
-            </ul>
-            <form class="navbar-form navbar-right">
-              <input type="text" class="form-control" placeholder="Search...">
-            </form>
-          </div> -->
         </div>
       </nav>
 
       <div class="container-fluid">
+        <!-- 登录 login -->
         <div class="row" v-if="step1=='login'">
           <br>
           <form class="form-horizontal">
@@ -82,15 +65,6 @@
                 <input type="password" class="form-control" id="password" placeholder="密码">
               </div>
             </div>
-            <!-- <div class="form-group">
-              <div class="col-sm-offset-2 col-sm-10">
-                <div class="checkbox">
-                  <label>
-                    <input type="checkbox"> Remember me
-                  </label>
-                </div>
-              </div>
-            </div> -->
             <div class="form-group">
               <div class="col-sm-offset-2 col-sm-10">
                 <input type="button" id="login" class="btn btn-default" value="登录" @click="login">
@@ -98,6 +72,8 @@
             </div>
           </form>
         </div>
+
+        <!-- 已登录 -->
         <div class="row" v-else>
           <div class="col-sm-3 col-md-2 sidebar">
             <!-- 普通用户 -->
@@ -118,7 +94,9 @@
             </ul>
           </div>
 
+          <!-- 右侧主要内容 -->
           <div>
+            <!-- 任务列表 tasklist -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='tasklist'">
               <div class="panel panel-primary">
                 <div class="panel-heading">任务列表</div>
@@ -151,7 +129,7 @@
               </div>
             </div>
 
-            <!-- newtask -->
+            <!-- 新任务 newtask -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='newtask'">
               <div v-if="step=='parseurl'" class="input-group">
                 <span class="input-group-addon">投票地址</span>
@@ -275,11 +253,11 @@
               </div>
             </div>
 
-            <!-- 我的余额 -->
+            <!-- 我的余额 mymoney -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='mymoney'">
               <div class="input-group">
                 <span class="input-group-addon">账户余额</span>
-                <input type="text" class="form-control" v-model="user.money" readonly>
+                <input type="text" class="form-control" :value="user.money" readonly>
               </div>
               <br>
               <p>使用支付宝扫一扫下方二维码，向137000000(xxx)转账付款</p>
@@ -323,7 +301,7 @@
                       <th>用户名</th>
                       <th>密码</th>
                       <th>是否管理员</th>
-                      <th>余额</th>
+                      <th>余额（元）</th>
                       <th>操作</th>
                     </tr>
                   </thead>
@@ -332,11 +310,44 @@
                       <td>{{user.username}}</td>
                       <td>{{user.password}}</td>
                       <td>{{user.isadmin}}</td>
-                      <td>{{user.balance}}</td>
+                      <td>{{user.balance.toFixed(2)}}</td>
                       <td>todo</td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <!-- 每个用户的任务列表 -->
+              <div v-for="(tasks, username) of usertasks">
+                <div class="panel panel-primary">
+                  <div class="panel-heading">用户【{{username}}】的任务列表</div>
+                  <table class="table table-condensed">
+                    <thead>
+                      <tr>
+                        <th>序号</th>
+                        <th>活动</th>
+                        <th>任务票数</th>
+                        <th>当前票数</th>
+                        <th>进度</th>
+                        <th>状态</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(task, index) in tasks">
+                        <td>{{index+1}}</td>
+                        <td>{{task.title}}</td>
+                        <td>{{task.votes}}</td>
+                        <td>{{task.curvotes}}</td>
+                        <td>
+                          <div class="progress">
+                            <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{(task.curvotes*100/task.votes).toFixed(2)}}%</div>
+                          </div>
+                        </td>
+                        <td>{{task.status=='doing'?'进行中':'已结束'}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -404,6 +415,7 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
+            // 当前用户
             user: {
               isadmin: false,
               money: '',
@@ -427,6 +439,8 @@
             // 管理员
             // 用户列表 userlist
             users: [],
+            // 管理员：用户任务列表 username=>[task...]
+            usertasks: {},
             // 执行器列表 runnerlist
             runners: [],
           },
@@ -523,7 +537,15 @@
                   return;
                 }
                 vm.users = users;
-              })
+
+                $.getJSON('/api/usertasks', function(usertasks) {
+                  if (usertasks.error) {
+                    console.log('获取用户任务列表失败：'+usertasks.error);
+                    return;
+                  }
+                  vm.usertasks = usertasks;
+                });
+              });
             },
             stepNewUser: function() {
               // TODO
@@ -657,6 +679,7 @@
           }
         });
 
+        // 默认打开的页面是“我的余额”
         vm.stepMyMoney();
       });
     </script>
