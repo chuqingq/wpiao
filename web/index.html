@@ -91,6 +91,7 @@
               <li v-bind:class="{active: step1=='userlist'}"><a href="#" @click="stepUserList">用户列表</a></li>
               <li v-bind:class="{active: step1=='newuser'}"><a href="#" @click="stepNewUser">新增用户</a></li>
               <li v-bind:class="{active: step1=='runnerlist'}"><a href="#" @click="stepRunnerList">Runner列表</a></li>
+              <li v-bind:class="{active: step1=='payorder'}"><a href="#" @click="stepPayOrder">录入充值订单和金额</a></li>
             </ul>
           </div>
 
@@ -374,6 +375,21 @@
                 </table>
               </div>
             </div>
+
+            <!-- 管理员 录入充值订单号 -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='payorder'">
+              <div class="input-group">
+                <span class="input-group-addon">充值订单号</span>
+                <input type="text" class="form-control" v-model="payorder.order">
+              </div>
+              <br>
+              <div class="input-group">
+                <span class="input-group-addon">充值金额（元）</span>
+                <input type="text" class="form-control" v-model="payorder.money">
+              </div>
+              <br>
+              <button type="button btn-primary" class="form-control" @click="submitpayorder">确认</button>
+            </div>
           </div>
         </div>
       </div>
@@ -443,6 +459,11 @@
             usertasks: {},
             // 执行器列表 runnerlist
             runners: [],
+            // 录入支付订单
+            payorder: {
+              order: '',
+              money: ''
+            }
           },
           computed: {
             expireTime: function() {
@@ -552,7 +573,6 @@
               vm.step1 = 'newuser';
             },
             stepRunnerList: function() {
-              // TODO
               $.getJSON('/api/runners', function(runners) {
                 if (runners.error) {
                   console.log('获取执行器失败：'+runners.error);
@@ -561,6 +581,10 @@
                 vm.runners = runners;
               });
               vm.step1 = 'runnerlist';
+            },
+            stepPayOrder: function() {
+              // 录入支付宝订单号
+              vm.step1 = 'payorder';
             },
 
             // step2
@@ -672,9 +696,28 @@
                 alert('新密码两次输入不匹配');
                 return;
               }
-              $.getJSON('/api/users/changepassword?old='+encodeURIComponent(vm.oldpassword)+'&new='+encodeURIComponent(vm.newpassword), function() {
+              $.getJSON('/api/users/changepassword?old='+encodeURIComponent(vm.oldpassword)+'&new='+encodeURIComponent(vm.newpassword), function(res) {
+                if (!res.error) {
+                  alert(res.error);
+                  return;
+                }
                 alert('密码修改成功！');
               });
+            },
+
+            // 录入支付宝订单
+            submitpayorder: function() {
+              if (!this.payorder || !this.payorder.order || !this.payorder.money) {
+                alert('输入的订单号或金额非法');
+                return;
+              }
+              $.getJSON('/api/payorder?order='+encodeURIComponent(this.payorder.order)+'&money='+encodeURIComponent(this.payorder.money), function(res) {
+                if (res.error) {
+                  alert('录入订单失败：'+res.error);
+                  return;
+                }
+                alert('录入订单成功！');
+              })
             }
           }
         });

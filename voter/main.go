@@ -38,6 +38,8 @@ func main() {
 
 	http.HandleFunc("/api/runners", RunnersHandle)
 
+	http.HandleFunc("/api/payorder", PayOrderHandle)
+
 	// websocket1: /api/ws/runner PC端连接，下发任务
 	http.HandleFunc("/api/ws/runner", WsRunner)
 	http.HandleFunc("/api/vote", RunnerVote)
@@ -621,4 +623,40 @@ func RunnersHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(by)
+}
+
+func PayOrderHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/payorder")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		errStr := "你不是管理员，只有管理员才能执行此操作"
+		w.Write([]byte(`{"error": "` + errStr + `"}`))
+		return
+	}
+
+	order := r.FormValue("order")
+	if order == "" {
+		w.Write([]byte(`{"error": "订单号非法"}`))
+		return
+	}
+
+	money, err := strconv.ParseFloat(r.FormValue("money"), 64)
+	if err != nil || money < 0.01 {
+		w.Write([]byte(`{"error": "金额非法"}`))
+		return
+	}
+
+	err = SavePayOrder(order, money)
+	if err != nil {
+		log.Printf("保存订单号失败：%v", err)
+		w.Write([]byte(`{"error": "` + err.Error() + `"}`))
+		return
+	}
+
+	w.Write([]byte(`{}`))
 }
