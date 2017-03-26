@@ -724,7 +724,7 @@
                 alert('输入的订单号或金额非法');
                 return;
               }
-              $.getJSON('/api/payorder?order='+encodeURIComponent(this.payorder.order)+'&money='+encodeURIComponent(this.payorder.money), function(res) {
+              $.getJSON('/api/admin/recordrechargeorder?order='+encodeURIComponent(this.payorder.order)+'&money='+encodeURIComponent(this.payorder.money), function(res) {
                 if (res.error) {
                   alert('录入订单失败：'+res.error);
                   return;
