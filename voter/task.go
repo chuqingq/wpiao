@@ -328,7 +328,8 @@ func (vi *Task) SetFinishTime(finishtime time.Time) error {
 
 func (vi *Task) SetStatus(status string) error {
 	vi.Status = status
-	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
+	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
+	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 }
 
 func (task *Task) DecrRunnerCount() error {
