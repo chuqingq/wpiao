@@ -185,10 +185,10 @@ func (users Users) GetUserByName(name string) *User {
 	return nil
 }
 
-func (user *User) Recharge(bill string) error {
+func (user *User) Recharge(order string) error {
 	// 先查询
 	recharges := []map[string]interface{}{}
-	err := MgoFind("weipiao", "recharge", bson.M{"bill": bill, "handled": false}, &recharges)
+	err := MgoFind("weipiao", "recharge", bson.M{"order": order, "handled": false}, &recharges)
 	if err != nil {
 		return err
 	}
@@ -199,11 +199,18 @@ func (user *User) Recharge(bill string) error {
 	recharge := recharges[0]
 
 	// 再更新为已处理
-	err = MgoUpdate("weipiao", "recharge", bson.M{"bill": bill, "handled": false}, bson.M{"$set": bson.M{"handled": true}})
+	// TODO 这里更新可以使用查出来的_id
+	err = MgoUpdate("weipiao", "recharge", bson.M{"order": order, "handled": false}, bson.M{"$set": bson.M{"handled": true}})
 	if err != nil {
 		return err
 	}
 
 	// 把订单额度加入账号
-	return user.SetBalance(user.Balance + recharge["money"].(float64))
+	err = user.SetBalance(user.Balance + recharge["money"].(float64))
+	if err != nil {
+		log.Printf("充值单(%v)已处理，但用户(%v)余额设置失败：%v", order, user.UserName, err)
+		return err
+	}
+
+	return nil
 }

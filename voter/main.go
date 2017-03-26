@@ -49,7 +49,7 @@ func main() {
 
 	http.HandleFunc("/api/runners", RunnersHandle)
 
-	http.HandleFunc("/api/payorder", PayOrderHandle)
+	http.HandleFunc("/api/admin/recordrechargeorder", RecordRechargeOrderHandle)
 
 	// websocket1: /api/ws/runner PC端连接，下发任务
 	http.HandleFunc("/api/ws/runner", WsRunner)
@@ -635,8 +635,9 @@ func RunnersHandle(w http.ResponseWriter, r *http.Request) {
 	w.Write(by)
 }
 
-func PayOrderHandle(w http.ResponseWriter, r *http.Request) {
-	log.Printf("/api/payorder")
+// 管理员录入充值的订单号和金额
+func RecordRechargeOrderHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/admin/recordrechargeorder")
 
 	user := UserLogin(w, r)
 	if user == nil {
@@ -661,7 +662,7 @@ func PayOrderHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = SavePayOrder(order, money)
+	err = RecordRechargeOrder(order, money)
 	if err != nil {
 		log.Printf("保存订单号失败：%v", err)
 		w.Write([]byte(`{"error": "` + err.Error() + `"}`))
