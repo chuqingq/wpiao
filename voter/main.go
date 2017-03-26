@@ -17,9 +17,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("open voter.log error: %v", err)
 	}
-	// if err := f.Close(); err != nil {
-	// 	log.Fatal(err)
-	// }
+
 	log.SetOutput(file)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile | log.LstdFlags)
 }
