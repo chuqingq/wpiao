@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -12,10 +13,20 @@ import (
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile | log.LstdFlags)
+	file, err := os.OpenFile("voter.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
+	if err != nil {
+		log.Fatalf("open voter.log error: %v", err)
+	}
+	// if err := f.Close(); err != nil {
+	// 	log.Fatal(err)
+	// }
+	log.SetOutput(file)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile | log.LstdFlags)
 }
 
 func main() {
+	log.Printf("voter is starting...")
+
 	// mongo
 	err := InitMongo("127.0.0.1")
 	if err != nil {
