@@ -92,7 +92,7 @@
               <li v-bind:class="{active: step1=='userlist'}"><a href="#" @click="stepUserList">用户列表</a></li>
               <li v-bind:class="{active: step1=='newuser'}"><a href="#" @click="stepNewUser">新增用户</a></li>
               <li v-bind:class="{active: step1=='runnerlist'}"><a href="#" @click="stepRunnerList">Runner列表</a></li>
-              <li v-bind:class="{active: step1=='payorder'}"><a href="#" @click="stepPayOrder">录入充值订单和金额</a></li>
+              <li v-bind:class="{active: step1=='recordrechargeorder'}"><a href="#" @click="stepRecordRechargeOrder">录入充值订单和金额</a></li>
             </ul>
           </div>
 
@@ -271,7 +271,7 @@
               <p>将转账后的订单号复制到下方编辑框中，点击提交即可充值。如遇问题，请联系客服</p>
               <div class="input-group">
                 <span class="input-group-addon">支付宝订单号</span>
-                <input type="text" class="form-control" id="rechargebill" placeholder="请输入支付宝订单编号">
+                <input type="text" class="form-control" :value="recharge.order" placeholder="请输入支付宝订单编号">
               </div>
               <br>
               <button type="button btn-primary" class="form-control" @click="recharge">提交订单号</button>
@@ -386,18 +386,18 @@
             </div>
 
             <!-- 管理员 录入充值订单号 -->
-            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='payorder'">
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='recordrechargeorder'">
               <div class="input-group">
                 <span class="input-group-addon">充值订单号</span>
-                <input type="text" class="form-control" v-model="payorder.order">
+                <input type="text" class="form-control" v-model="recharge.order">
               </div>
               <br>
               <div class="input-group">
                 <span class="input-group-addon">充值金额（元）</span>
-                <input type="text" class="form-control" v-model="payorder.money">
+                <input type="text" class="form-control" v-model="recharge.money">
               </div>
               <br>
-              <button type="button btn-primary" class="form-control" @click="submitpayorder">确认</button>
+              <button type="button btn-primary" class="form-control" @click="recordrechargeorder">确认</button>
             </div>
           </div>
         </div>
@@ -469,7 +469,7 @@
             // 执行器列表 runnerlist
             runners: [],
             // 录入支付订单
-            payorder: {
+            recharge: {
               order: '',
               money: ''
             }
@@ -595,9 +595,9 @@
               });
               vm.step1 = 'runnerlist';
             },
-            stepPayOrder: function() {
+            stepRecordRechargeOrder: function() {
               // 录入支付宝订单号
-              vm.step1 = 'payorder';
+              vm.step1 = 'recordrechargeorder';
             },
 
             // step2
@@ -692,7 +692,7 @@
 
             // 提交充值的支付宝单号 recharge
             recharge: function () {
-              $.getJSON('/api/users/recharge?bill='+$('#rechargebill').val(), function(data) {
+              $.getJSON('/api/users/recharge?order='+this.recharge.order, function(data) {
                 if (data.error) {
                   alert(data.error);
                   return;
@@ -719,12 +719,12 @@
             },
 
             // 录入支付宝订单
-            submitpayorder: function() {
-              if (!this.payorder || !this.payorder.order || !this.payorder.money) {
+            recordrechargeorder: function() {
+              if (!this.recharge || !this.recharge.order || !this.recharge.money) {
                 alert('输入的订单号或金额非法');
                 return;
               }
-              $.getJSON('/api/admin/recordrechargeorder?order='+encodeURIComponent(this.payorder.order)+'&money='+encodeURIComponent(this.payorder.money), function(res) {
+              $.getJSON('/api/admin/recordrechargeorder?order='+encodeURIComponent(this.recharge.order)+'&money='+encodeURIComponent(this.recharge.money), function(res) {
                 if (res.error) {
                   alert('录入订单失败：'+res.error);
                   return;

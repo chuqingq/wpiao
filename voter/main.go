@@ -438,15 +438,15 @@ func UserRechargeHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bill := r.FormValue("bill")
-	if bill == "" {
+	order := r.FormValue("order")
+	if order == "" {
 		errstr := "订单号无效"
 		w.Write([]byte(`{"error": "` + errstr + `"}`))
 		// w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err := user.Recharge(bill)
+	err := user.Recharge(order)
 	if err != nil {
 		errstr := "充值失败：" + err.Error()
 		log.Println(errstr)
