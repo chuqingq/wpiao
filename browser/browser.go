@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	file, err := os.OpenFile("browser.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
+	file, err := os.OpenFile("D:\\browser.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
 	if err != nil {
 		log.Fatalf("open voter.log error: %v", err)
 	}
