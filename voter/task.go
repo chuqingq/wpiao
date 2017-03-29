@@ -223,7 +223,12 @@ func tasksToArray(voteInfos []*Task) []map[string]interface{} {
 
 func QueryTasksByUser(username string) ([]*Task, error) {
 	var task []*Task
-	err := MgoFind("weipiao", "task", bson.M{"user": username}, &task)
+	// err := MgoFind("weipiao", "task", bson.M{"user": username}, &task)
+	session := mongoSession.Clone()
+	defer session.Close()
+	c := session.DB("weipiao").C("task")
+	// 按照createtime逆序
+	err := c.Find(bson.M{"user": username}).Sort("-createtime").All(&task)
 	if err != nil {
 		log.Printf("MgoFind(task) error: %v", err)
 		return nil, err
