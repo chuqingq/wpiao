@@ -98,6 +98,9 @@ func doDispatchTask(task *Task) {
 		if index < vote2 {
 			count += 1
 		}
+		if count > r.AccountCount {
+			count = r.AccountCount
+		}
 		// 经过验证，这种算法基本平均
 		r.DispatchTask(task, count)
 		log.Printf("doDispatchTask: runner: %v, task: %v, count: %v", r.Name, task.Id, count)
