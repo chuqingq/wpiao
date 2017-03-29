@@ -151,9 +151,9 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 
 func (r *Runner) DispatchTask(task *Task, votes int) {
 	// votes := task.Votes - task.CurVotes
-	if votes <= 0 {
-		return
-	}
+	// if votes <= 0 {
+	// 	return
+	// }
 
 	req := map[string]interface{}{}
 	req["cmd"] = "vote"
