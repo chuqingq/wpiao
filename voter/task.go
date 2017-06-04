@@ -10,23 +10,26 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"time"
 
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type Tasks map[string]*Task
+// // key -> task
+// type Tasks map[string]*Task
 
-func (vis Tasks) Get(key string) *Task {
-	return vis[key]
-}
+// func (vis Tasks) Get(key string) *Task {
+// 	return vis[key]
+// }
 
-func (vis Tasks) Set(key string, vi *Task) {
-	vis[key] = vi
-}
+// func (vis Tasks) Set(key string, vi *Task) {
+// 	vis[key] = vi
+// }
 
-func (vis Tasks) Del(key string) {
-	delete(vis, key)
-}
+// func (vis Tasks) Del(key string) {
+// 	delete(vis, key)
+// }
 
 type Task struct {
 	Id          bson.ObjectId          `bson:"_id"`
@@ -36,12 +39,15 @@ type Task struct {
 	Supervoteid string                 `bson:"supervoteid"`
 	Info        map[string]interface{} `bson:"info"` // 投票信息。包括活动标题、到期时间、投票对象等
 	// Info     string `bson:"info"`
-	Item     string  `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
-	User     string  `bson:"user"`  // 下发任务的用户名
-	Votes    uint64  `bson:"votes"` // 票数
-	Price    float64 `bson:"price"` // 单价，单位是元/票
-	Speed    uint64  `bson:"speed"` // TODO 暂未使用。每分钟的票数
-	CurVotes uint64  `bson:"curvotes"`
+	Item        string    `bson:"item"`  // Item        map[string]interface{} `bson:"item"`  // 投的对象
+	User        string    `bson:"user"`  // 下发任务的用户名
+	Votes       uint64    `bson:"votes"` // 票数
+	Price       float64   `bson:"price"` // 单价，单位是元/票
+	Speed       uint64    `bson:"speed"` // TODO 暂未使用。每分钟的票数
+	CurVotes    uint64    `bson:"curvotes"`
+	RunnerCount int       `bson:"runnercount"` // 在运行的runner数量
+	CreateTime  time.Time `bson:"createtime"`
+	FinishTime  time.Time `bsoin:"finishtime"`
 }
 
 func GetKeyFromUrl(voteUrl string) string {
@@ -191,21 +197,60 @@ func (vi *Task) Insert() error {
 	return MgoInsert("weipiao", "task", vi)
 }
 
-// 提交任务
-func (vi *Task) Submit() error {
-	// update votes/item等字段 TODO
-	return MgoInsert("weipiao", "task", vi)
+// 给前端输出的任务信息
+func tasksToArray(voteInfos []*Task) []map[string]interface{} {
+	tasks := []map[string]interface{}{}
+	for _, info := range voteInfos {
+		task := map[string]interface{}{}
+		task["title"] = info.Info["title"]
+		task["votes"] = info.Votes
+		task["curvotes"] = info.CurVotes
+		task["status"] = info.Status
+		task["createtime"] = info.CreateTime.Format("2006-01-02 15:04:05")
+		task["finishtime"] = info.FinishTime.Format("2006-01-02 15:04:05")
+		tasks = append(tasks, task)
+	}
+
+	return tasks
 }
+
+// 提交任务
+// func (vi *Task) Submit() error {
+// 	// update votes/item等字段 TODO
+// 	vi.CreateTime = time.Now()
+// 	return MgoInsert("weipiao", "task", vi)
+// }
 
 func QueryTasksByUser(username string) ([]*Task, error) {
 	var task []*Task
-	err := MgoFind("weipiao", "task", bson.M{"user": username}, &task)
+	// err := MgoFind("weipiao", "task", bson.M{"user": username}, &task)
+	session := mongoSession.Clone()
+	defer session.Close()
+	c := session.DB("weipiao").C("task")
+	// 按照createtime逆序
+	err := c.Find(bson.M{"user": username}).Sort("-createtime").All(&task)
 	if err != nil {
 		log.Printf("MgoFind(task) error: %v", err)
 		return nil, err
 	}
 
 	return task, nil
+}
+
+func QueryTaskById(taskId string) (*Task, error) {
+	log.Printf("QueryTaskById(): %v", taskId)
+	var tasks []*Task
+	err := MgoFind("weipiao", "task", bson.M{"_id": bson.ObjectIdHex(taskId)}, &tasks)
+	if err != nil {
+		log.Printf("MgoFind(task) error: %v", err)
+		return nil, err
+	}
+
+	if len(tasks) == 0 {
+		return nil, errors.New("task not found by key")
+	}
+
+	return tasks[0], nil
 }
 
 func QueryTaskByKey(key string) (*Task, error) {
@@ -281,9 +326,49 @@ func (vi *Task) DecrVotes() error {
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }
 
+func (vi *Task) SetFinishTime(finishtime time.Time) error {
+	vi.FinishTime = finishtime
+	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"finishtime": vi.FinishTime}})
+}
+
 func (vi *Task) SetStatus(status string) error {
 	vi.Status = status
-	return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
+	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"status": vi.Status}})
+	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
+}
+
+func (task *Task) DecrRunnerCount() error {
+	// 原子-1并返回内容
+	session := mongoSession.Clone()
+	defer session.Close()
+	c := session.DB("weipiao").C("task")
+
+	change := mgo.Change{
+		Update:    bson.M{"$inc": bson.M{"runnercount": -1}},
+		ReturnNew: true,
+	}
+	// var task2 Task
+	_, err := c.Find(bson.M{"_id": bson.ObjectId(task.Id)}).Apply(change, &task)
+	if err != nil {
+		log.Printf("DecrRunnerCount change error: %v", err)
+		return err
+	}
+	log.Printf("new runnercount: %v", task.RunnerCount)
+	// err := MgoUpdate("weipiao", "task", bson.M{"_id": bson.ObjectId(task.Id)}, bson.M{"$inc": bson.M{"runnercount": -1}})
+	// if err != nil {
+	// 	log.Printf("DecrRunnerCount error: %v", err)
+	// 	return -1
+	// }
+	// task2, err := QueryTaskById(task.Id.Hex())
+	// if err != nil {
+	// 	log.Printf("QueryTaskById error: %v", err)
+	// 	return -1
+	// }
+	return nil
+}
+
+func (task *Task) SetRunnerCount(count int) error {
+	return MgoUpdate("weipiao", "task", bson.M{"_id": task.Id}, bson.M{"$set": bson.M{"runnercount": count}})
 }
 
 func jsonUnmarshal(data []byte, v interface{}) error {
@@ -292,30 +377,34 @@ func jsonUnmarshal(data []byte, v interface{}) error {
 	return d.Decode(v)
 }
 
-// 一个PC完成后根据url做调整
-func TaskDispatch(voteUrl string) error {
-	log.Printf("TaskDispatch: url: %v", voteUrl)
+// // 一个PC完成后根据url做调整
+// func TaskDispatch(voteUrl string) error {
+// 	log.Printf("TaskDispatch: url: %v", voteUrl)
 
-	var tasks []*Task
-	err := MgoFind("weipiao", "task", bson.M{"url": voteUrl, "status": "doing"}, &tasks)
-	if err != nil {
-		log.Printf("MgoFind(task) error: %v", err)
-		return err
-	}
+// 	var tasks []*Task
+// 	err := MgoFind("weipiao", "task", bson.M{"url": voteUrl, "status": "doing"}, &tasks)
+// 	if err != nil {
+// 		log.Printf("MgoFind(task) error: %v", err)
+// 		return err
+// 	}
 
-	if len(tasks) == 0 {
-		return errors.New("task not found: url: " + voteUrl)
-	}
+// 	if len(tasks) == 0 {
+// 		return errors.New("task not found: url: " + voteUrl)
+// 	}
 
-	task := tasks[0]
-	if task.Status == "doing" {
-		r := GetFreeRunner(task.Key) // TODO 还是要保证db.task中记录是有key的
-		if r == nil {
-			log.Printf("TaskDispatch: no free runner: %v", task.Key)
-			return errors.New("TaskDispatch: no free runner")
-		}
-		r.DispatchTask(task)
-	}
+// 	task := tasks[0]
+// 	if task.Status != "doing" {
+// 		return nil
+// 	}
 
-	return nil
-}
+// 	if task.Status == "doing" {
+// 		r := GetFreeRunner(task.Key) // TODO 还是要保证db.task中记录是有key的
+// 		if r == nil {
+// 			log.Printf("TaskDispatch: no free runner: %v", task.Key)
+// 			return errors.New("TaskDispatch: no free runner")
+// 		}
+// 		r.DispatchTask(task)
+// 	}
+
+// 	return nil
+// }

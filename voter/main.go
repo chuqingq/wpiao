@@ -4,41 +4,54 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	// "strconv"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// const SHORT_URL = "http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w"
-// const ITEM = `{"super_vote_item":[{"vote_id":684888407,"item_idx_list":{"item_idx":["0"]}}],"super_vote_id":684888406}`
-// const DST_VOTES = 1
-// const VOTE_URL = "https://mp.weixin.qq.com/s?__biz=MzA5NjYwOTg0Nw==&mid=2650886522&idx=1&sn=317f363e12cd7c45e6bbc0de9916a6c6&key=f6fc65d37e8c2007e879f47762586e65a02d8fbd5b84db235e00e511b8101f887e892a2554674628ca531decec74f300247b10a9d1bddcb0db5ed37662159345e43c794bdb7046a6a6c53cd203b232d1&ascene=1&uin=MTMwMzUxMjg3Mw%3D%3D&devicetype=Windows+7&version=61000603&pass_ticket=EnayxJ3mRIUH%2BQl8MDq4Bjq1qQJiB0M4Od8lSTPh3ejMZ1VSt03lQLCWB0LI5dKT"
+func init() {
+	file, err := os.OpenFile("voter.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
+	if err != nil {
+		log.Fatalf("open voter.log error: %v", err)
+	}
 
-// var gWsConns = map[string]*websocket.Conn{}
+	log.SetOutput(file)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile | log.LstdFlags)
+}
 
 func main() {
+	log.Printf("voter is starting...")
+
 	// mongo
 	err := InitMongo("127.0.0.1")
 	if err != nil {
 		log.Fatalf("init mongo error: %v", err)
 	}
 
-	// beego.BConfig.WebConfig.Session.SessionOn = true
-	// beego.BConfig.WebConfig.Session.SessionProvider 默认是 memory，目前支持还有 file、mysql、redis 等
-	// beego.BConfig.WebConfig.Session.SessionGCMaxLifetime 默认3600秒
 	http.HandleFunc("/api/login", Login)
+	http.HandleFunc("/api/logout", Logout)
 	http.HandleFunc("/api/tasks", TasksHandle)
 	http.HandleFunc("/api/parseurl", ParseUrl)
 	http.HandleFunc("/api/submititem", SubmitItem)
 	http.HandleFunc("/api/submittask", SubmitTask)
 
+	http.HandleFunc("/api/users/userinfo", UserInfoHandle)
+	http.HandleFunc("/api/users/recharge", UserRechargeHandle)
+	// TODO 需要有管理员或自动向recharge表中录入支付宝订单，包括单号、金额、未处理
 	http.HandleFunc("/api/users/changepassword", ChangePasswordHandle)
 
 	http.HandleFunc("/api/users", UsersHandle)
+	http.HandleFunc("/api/usertasks", UserTasksHandle)
 	http.HandleFunc("/api/newuser", NewUser)
 
-	// TODO websocket1: /api/ws/runner PC端连接，下发任务
+	http.HandleFunc("/api/runners", RunnersHandle)
+
+	http.HandleFunc("/api/admin/recordrechargeorder", RecordRechargeOrderHandle)
+
+	// websocket1: /api/ws/runner PC端连接，下发任务
 	http.HandleFunc("/api/ws/runner", WsRunner)
 	http.HandleFunc("/api/vote", RunnerVote)
 
@@ -60,7 +73,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(`{"ret":0,"msg":"login success"}`))
+	w.Write([]byte(`{"ret":0, "isadmin": ` + strconv.FormatBool(user.IsAdmin) + `, "money": "` + strconv.FormatFloat(user.Balance, 'f', 2, 64) + `"}`))
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/logout:")
+
+	passwordCookie := &http.Cookie{
+		Name:   "wp_password",
+		Value:  "",
+		MaxAge: 0, // 单位：秒。
+	}
+	http.SetCookie(w, passwordCookie)
+
+	w.Write([]byte(`{}`))
 }
 
 func TasksHandle(w http.ResponseWriter, r *http.Request) {
@@ -79,14 +105,7 @@ func TasksHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks := []map[string]interface{}{}
-	for _, info := range voteInfos {
-		task := map[string]interface{}{}
-		task["title"] = info.Info["title"]
-		task["votes"] = info.Votes
-		task["curvotes"] = info.CurVotes
-		tasks = append(tasks, task)
-	}
+	tasks := tasksToArray(voteInfos)
 	log.Printf("tasks: %+v", tasks)
 
 	tasksBytes, err := json.Marshal(tasks)
@@ -238,12 +257,13 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		Key:  key,
 		Info: info,
 		// Item:   item,
-		Item:   itemStr,
-		User:   user.UserName,
-		Votes:  uint64(votes),
-		Price:  price,
-		Speed:  uint64(speed),
-		Status: "doing",
+		Item:       itemStr,
+		User:       user.UserName,
+		Votes:      uint64(votes),
+		Price:      price,
+		Speed:      uint64(speed),
+		Status:     "doing",
+		CreateTime: time.Now(),
 	}
 
 	// 写到数据库中
@@ -256,21 +276,22 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 
 	// 处理任务
-	runnerCount := len(gRunners)
-	if runnerCount == 0 {
-		log.Printf("ERROR runner not found")
-		return
-	}
+	RunnersDispatchTask(taskStruct)
+	// runnerCount := len(gRunners)
+	// if runnerCount == 0 {
+	// 	log.Printf("ERROR runner not found")
+	// 	return
+	// }
 
-	runner := GetFreeRunner(key)
-	if runner == nil {
-		log.Printf("ERROR GetFreeRunner returns nil runner")
-		return
-	}
+	// runner := GetFreeRunner(key)
+	// if runner == nil {
+	// 	log.Printf("ERROR GetFreeRunner returns nil runner")
+	// 	return
+	// }
 
-	runner.DispatchTask(taskStruct)
+	// runner.DispatchTask(taskStruct)
 
-	log.Printf("dispatch task(%v,%v) to executer(%v)", taskStruct.Url, taskStruct.Votes, runner.Conn.RemoteAddr().String())
+	// log.Printf("dispatch task(%v,%v) to executer(%v)", taskStruct.Url, taskStruct.Votes, runner.Conn.RemoteAddr().String())
 }
 
 var upgrader = websocket.Upgrader{
@@ -294,6 +315,7 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 	// gWsConns[addr] = ws
 	// defer delete(gWsConns, addr)
 
+	var runner *Runner
 	for {
 		msgtype, msgBytes, err := ws.ReadMessage()
 		if err != nil {
@@ -310,8 +332,9 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if msg["cmd"].(string) == "login" {
-			runner := &Runner{
+			runner = &Runner{
 				Conn: ws,
+				Addr: addr,
 			}
 			err = json.Unmarshal(msgBytes, runner)
 			if err != nil {
@@ -325,9 +348,16 @@ func WsRunner(w http.ResponseWriter, r *http.Request) {
 		} else if msg["cmd"].(string) == "vote_finish" {
 			log.Printf("runner vote finish: %v,%+v", addr, msg)
 			// 需要根据完成情况做调整
-			TaskDispatch(msg["url"].(string))
+			// TaskDispatch(msg["url"].(string))
+			task, err := QueryTaskById(msg["taskid"].(string))
+			if err != nil {
+				log.Printf("根据taskId获取任务失败：%v, %v", msg["taskid"], err)
+				continue
+			}
+			// RunnersDispatchTask(task)
+			// 通知runner这个任务已经结束，可能需要补票或者退款
+			runner.NotifyTaskFinish(task)
 		}
-
 	}
 }
 
@@ -384,6 +414,49 @@ func WsWeb(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
+func UserInfoHandle(w http.ResponseWriter, r *http.Request) {
+	log.Println("/api/users/userinfo:")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	res := map[string]interface{}{}
+	res["username"] = user.UserName
+	res["isadmin"] = user.IsAdmin
+	res["money"] = strconv.FormatFloat(user.Balance, 'f', 2, 32)
+	by, _ := json.Marshal(res)
+	w.Write(by)
+}
+
+func UserRechargeHandle(w http.ResponseWriter, r *http.Request) {
+	log.Println("/api/users/recharge:")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	order := r.FormValue("order")
+	if order == "" {
+		errstr := "订单号无效"
+		w.Write([]byte(`{"error": "` + errstr + `"}`))
+		// w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err := user.Recharge(order)
+	if err != nil {
+		errstr := "充值失败：" + err.Error()
+		log.Println(errstr)
+		// w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "` + errstr + `"}`))
+		return
+	}
+	w.Write([]byte(`{"money": "` + strconv.FormatFloat(user.Balance, 'f', 2, 64) + `"}`))
+}
+
 func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("/api/users/changepassword:")
 
@@ -411,7 +484,7 @@ func ChangePasswordHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO 没使用旧
+	// TODO 没使用旧密码
 	err := user.ChangePassword(newpass)
 	if err != nil {
 		log.Printf("修改密码失败: %v", err)
@@ -433,14 +506,61 @@ func UsersHandle(w http.ResponseWriter, r *http.Request) {
 	users, err := user.QueryAllUsers()
 	if err != nil {
 		log.Printf("QueryAllUsers error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "查询数据库错误"}`))
 		return
 	}
 
 	by, err := json.Marshal(users)
 	if err != nil {
 		log.Printf("marshal users(%v) error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "格式错误"}`))
+		return
+	}
+
+	w.Write(by)
+}
+
+func UserTasksHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/usertasks")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		log.Printf("这个页面只有管理员有权查看")
+		w.Write([]byte(`{"error": "这个页面只有管理员有权查看"}`))
+		return
+	}
+
+	users, err := user.QueryAllUsers()
+	if err != nil {
+		log.Printf("QueryAllUsers error: %v", err)
+		w.Write([]byte(`{"error": "查询数据库错误"}`))
+		return
+	}
+
+	userTasks := map[string][]map[string]interface{}{}
+	for _, user := range users {
+		tasks, err := QueryTasksByUser(user.UserName)
+		if err != nil {
+			log.Printf("查询用户%v的任务时失败: %v", user.UserName, err)
+			w.Write([]byte(`{"error": "查询用户任务失败"}`))
+			return
+		}
+		tasks2 := tasksToArray(tasks)
+		userTasks[user.UserName] = tasks2
+	}
+
+	// res := map[string]interface{}{}
+	// res["users"] = users
+	// res["usertasks"] = userTasks
+
+	by, err := json.Marshal(userTasks)
+	if err != nil {
+		log.Printf("marshal res(%v) error: %v", err)
+		w.Write([]byte(`{"error": "格式错误"}`))
 		return
 	}
 
@@ -489,4 +609,65 @@ func NewUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("{}"))
+}
+
+func RunnersHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/runners")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		errStr := "你不是管理员，只有管理员才能查看执行器列表"
+		w.Write([]byte(`{"error": "` + errStr + `"}`))
+		return
+	}
+
+	by, err := json.Marshal(gRunners)
+	if err != nil {
+		log.Printf("gRunners (%v) 格式化失败: %v", err)
+		w.Write([]byte(`{"error": "格式错误"}`))
+		return
+	}
+
+	w.Write(by)
+}
+
+// 管理员录入充值的订单号和金额
+func RecordRechargeOrderHandle(w http.ResponseWriter, r *http.Request) {
+	log.Printf("/api/admin/recordrechargeorder")
+
+	user := UserLogin(w, r)
+	if user == nil {
+		return
+	}
+
+	if !user.IsAdmin {
+		errStr := "你不是管理员，只有管理员才能执行此操作"
+		w.Write([]byte(`{"error": "` + errStr + `"}`))
+		return
+	}
+
+	order := r.FormValue("order")
+	if order == "" {
+		w.Write([]byte(`{"error": "订单号非法"}`))
+		return
+	}
+
+	money, err := strconv.ParseFloat(r.FormValue("money"), 64)
+	if err != nil || money < 0.01 {
+		w.Write([]byte(`{"error": "金额非法"}`))
+		return
+	}
+
+	err = RecordRechargeOrder(order, money)
+	if err != nil {
+		log.Printf("保存订单号失败：%v", err)
+		w.Write([]byte(`{"error": "` + err.Error() + `"}`))
+		return
+	}
+
+	w.Write([]byte(`{}`))
 }

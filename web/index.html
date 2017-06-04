@@ -43,31 +43,38 @@
       <nav class="navbar navbar-inverse navbar-fixed-top">
         <div class="container-fluid">
           <div class="navbar-header">
-            <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-              <span class="sr-only">Toggle navigation</span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-            </button> -->
             <a class="navbar-brand">微票</a>
           </div>
-          <!-- <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right">
-              <li><a href="#" @click="stepTaskList">任务列表</a></li>
-              <li><a href="#" @click="stepNewTask">新建任务</a></li>
-              <li><a href="#" @click="stepUserList">用户列表</a></li>
-              <li><a href="#" @click="stepNewUser">新建用户</a></li>
-              <li><a href="#" @click="stepChangePassword">修改密码</a></li>
-            </ul>
-            <form class="navbar-form navbar-right">
-              <input type="text" class="form-control" placeholder="Search...">
-            </form>
-          </div> -->
         </div>
       </nav>
 
       <div class="container-fluid">
-        <div class="row">
+        <!-- 登录 login -->
+        <div class="row" v-if="step1=='login'">
+          <br>
+          <form class="form-horizontal">
+            <div class="form-group">
+              <label class="col-sm-2 control-label">用户名</label>
+              <div class="col-sm-6">
+                <input class="form-control" id="username" placeholder="用户名">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-2 control-label">密码</label>
+              <div class="col-sm-6">
+                <input type="password" class="form-control" id="password" placeholder="密码">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <input type="button" id="login" class="btn btn-default" value="登录" @click="login">
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- 已登录 -->
+        <div class="row" v-else>
           <div class="col-sm-3 col-md-2 sidebar">
             <!-- 普通用户 -->
             <ul class="nav nav-sidebar">
@@ -76,16 +83,22 @@
             </ul>
             <!-- 自己管理 -->
             <ul class="nav nav-sidebar">
+              <li v-bind:class="{active: step1=='mymoney'}"><a href="#" @click="stepMyMoney">我的余额</a></li>
               <li v-bind:class="{active: step1=='changepassword'}"><a href="#" @click="stepChangePassword">修改密码</a></li>
+              <li v-bind:class="{active: step1=='logout'}"><a href="#" @click="stepLogout">退出</a></li>
             </ul>
             <!-- 管理员 -->
-            <!-- <ul class="nav nav-sidebar">
-              <li><a href="#" @click="stepUserList">用户列表</a></li>
-              <li><a href="#" @click="stepNewUser">新增用户</a></li>
-            </ul> -->
+            <ul class="nav nav-sidebar" v-if="user.isadmin">
+              <li v-bind:class="{active: step1=='userlist'}"><a href="#" @click="stepUserList">用户列表</a></li>
+              <li v-bind:class="{active: step1=='newuser'}"><a href="#" @click="stepNewUser">新增用户</a></li>
+              <li v-bind:class="{active: step1=='runnerlist'}"><a href="#" @click="stepRunnerList">Runner列表</a></li>
+              <li v-bind:class="{active: step1=='recordrechargeorder'}"><a href="#" @click="stepRecordRechargeOrder">录入充值订单和金额</a></li>
+            </ul>
           </div>
 
+          <!-- 右侧主要内容 -->
           <div>
+            <!-- 任务列表 tasklist -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='tasklist'">
               <div class="panel panel-primary">
                 <div class="panel-heading">任务列表</div>
@@ -97,6 +110,9 @@
                       <th>任务票数</th>
                       <th>当前票数</th>
                       <th>进度</th>
+                      <th>状态</th>
+                      <th>开始时间</th>
+                      <!-- <th>结束时间</th> -->
                     </tr>
                   </thead>
                   <tbody>
@@ -107,20 +123,23 @@
                       <td>{{task.curvotes}}</td>
                       <td>
                         <div class="progress">
-                          <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{task.curvotes*100/task.votes}}%</div>
+                          <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{(task.curvotes*100/task.votes).toFixed(2)}}%</div>
                         </div>
                       </td>
+                      <td>{{task.status=='doing'?'进行中':'已结束'}}</td>
+                      <td>{{task.createtime}}</td>
+                      <!-- <td>{{task.finishtime}}</td> -->
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <!-- newtask -->
+            <!-- 新任务 newtask -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='newtask'">
               <div v-if="step=='parseurl'" class="input-group">
-                <span class="input-group-addon">投票地址</span>
-                <input type="text" class="form-control" v-model="url">
+                <span class="input-group-addon">投票地址（短连接）</span>
+                <input type="text" class="form-control" placeholder="请输入投票地址（短连接）" v-model="url">
               </div>
 
               <div v-if="step=='selectvote'">
@@ -240,7 +259,25 @@
               </div>
             </div>
 
-            <!-- changePassword -->
+            <!-- 我的余额 mymoney -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='mymoney'">
+              <div class="input-group">
+                <span class="input-group-addon">账户余额</span>
+                <input type="text" class="form-control" :value="user.money" readonly>
+              </div>
+              <br>
+              <p>使用支付宝扫一扫下方二维码，向137000000(xxx)转账付款</p>
+              <img src="zhifubao.png" />
+              <p>将转账后的订单号复制到下方编辑框中，点击提交即可充值。如遇问题，请联系客服</p>
+              <div class="input-group">
+                <span class="input-group-addon">支付宝订单号</span>
+                <input type="text" class="form-control" :value="recharge.order" placeholder="请输入支付宝订单编号">
+              </div>
+              <br>
+              <button type="button btn-primary" class="form-control" @click="recharge">提交订单号</button>
+            </div>
+
+            <!-- 修改密码 changePassword -->
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='changepassword'">
               <div class="input-group">
                 <span class="input-group-addon">旧密码</span>
@@ -259,6 +296,109 @@
               <br>
               <button type="button btn-primary" class="form-control" @click="changepassword">确认</button>
             </div>
+
+            <!-- 管理员 用户列表 userlist -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='userlist'">
+              <div class="panel panel-primary">
+                <div class="panel-heading">用户列表</div>
+                <table class="table table-condensed">
+                  <thead>
+                    <tr>
+                      <th>用户名</th>
+                      <th>密码</th>
+                      <th>是否管理员</th>
+                      <th>余额（元）</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(user, index) in users">
+                      <td>{{user.username}}</td>
+                      <td>{{user.password}}</td>
+                      <td>{{user.isadmin}}</td>
+                      <td>{{user.balance.toFixed(2)}}</td>
+                      <td>todo</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 每个用户的任务列表 -->
+              <div v-for="(tasks, username) of usertasks">
+                <div class="panel panel-primary">
+                  <div class="panel-heading">用户【{{username}}】的任务列表</div>
+                  <table class="table table-condensed">
+                    <thead>
+                      <tr>
+                        <th>序号</th>
+                        <th>活动</th>
+                        <th>任务票数</th>
+                        <th>当前票数</th>
+                        <th>进度</th>
+                        <th>状态</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(task, index) in tasks">
+                        <td>{{index+1}}</td>
+                        <td>{{task.title}}</td>
+                        <td>{{task.votes}}</td>
+                        <td>{{task.curvotes}}</td>
+                        <td>
+                          <div class="progress">
+                            <div class="progress-bar progress-bar-striped" style="color: #000000;" v-bind:style="{width: task.curvotes*100/task.votes+'%'}">{{(task.curvotes*100/task.votes).toFixed(2)}}%</div>
+                          </div>
+                        </td>
+                        <td>{{task.status=='doing'?'进行中':'已结束'}}</td>
+                        <td>{{task.createtime}}</td>
+                        <td>{{task.finishtime}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 管理员 执行器列表 runnerlist -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='runnerlist'">
+              <div class="panel panel-primary">
+                <div class="panel-heading">runner列表</div>
+                <table class="table table-condensed">
+                  <thead>
+                    <tr>
+                      <th>名称</th>
+                      <th>账号数</th>
+                      <th>地址</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(runner, index) in runners">
+                      <td>{{runner.name}}</td>
+                      <td>{{runner.accounts}}</td>
+                      <td>{{runner.addr}}</td>
+                      <td>todo</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 管理员 录入充值订单号 -->
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" v-if="step1=='recordrechargeorder'">
+              <div class="input-group">
+                <span class="input-group-addon">充值订单号</span>
+                <input type="text" class="form-control" v-model="recharge.order">
+              </div>
+              <br>
+              <div class="input-group">
+                <span class="input-group-addon">充值金额（元）</span>
+                <input type="text" class="form-control" v-model="recharge.money">
+              </div>
+              <br>
+              <button type="button btn-primary" class="form-control" @click="recordrechargeorder">确认</button>
+            </div>
           </div>
         </div>
       </div>
@@ -271,6 +411,7 @@
     <script src="./vendor/vuejs/vue.js"></script>
     <script src="./vendor/jquery/jquery.min.js"></script>
     <script src="./vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./vendor/hashes/hashes.min.js"></script>
     <!-- Just to make our placeholder images work. Don't actually copy the next line! -->
     <!-- <script src="../../assets/js/vendor/holder.min.js"></script> -->
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
@@ -299,7 +440,13 @@
         vm = new Vue({
           el: '#wrapper',
           data: {
-            step1: 'tasklist', // 当前第一级步骤：tasklist任务列表，newtask新建任务
+            // 当前用户
+            user: {
+              isadmin: false,
+              money: '',
+            },
+
+            step1: '', // 当前第一级步骤：tasklist任务列表，newtask新建任务
             tasks: [],
 
             // 修改密码
@@ -308,11 +455,24 @@
             confirmnewpassword: '',
 
             step: 'parseurl', // 当前第二级步骤：parseurl、submititem、submittask
-            url: 'http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w', // 方便调试
+            url: '', // 方便调试: http://mp.weixin.qq.com/s/WEBkpBjBdOAIXxu9fknV9w
             key: '',
             voteinfo: voteInfo, // 投票信息，最初是null
             voteitem: null, // 投票对象
             task: {}, // 主备下发的任务
+
+            // 管理员
+            // 用户列表 userlist
+            users: [],
+            // 管理员：用户任务列表 username=>[task...]
+            usertasks: {},
+            // 执行器列表 runnerlist
+            runners: [],
+            // 录入支付订单
+            recharge: {
+              order: '',
+              money: ''
+            }
           },
           computed: {
             expireTime: function() {
@@ -334,16 +494,47 @@
             // selected: function() {},
           },
           methods: {
+            login: function() {
+              console.log('login:');
+              var username = $('#username').val();
+              var password = $('#password').val();
+              var timestamp = Math.round(new Date().getTime()/1000) + 4*60*60;
+              timestamp = '' + timestamp;
+
+              var SHA1 = new Hashes.SHA1;
+              password = SHA1.hex(timestamp + password);
+
+              $.getJSON('/api/login?username='+username+'&password='+password+'&timestamp='+timestamp, function(data, status) {
+                if (data.ret == 0) {
+                  // window.location = '/index.html';
+                  console.log('login success');
+                  // vm.step1 = 'tasklist';
+                  vm.user.money = data.money;
+                  vm.user.isadmin = !!data.isadmin;
+                  vm.stepMyMoney();
+                } else {
+                  alert('用户名或密码无效');
+                  return false;
+                }
+              });
+            },
             checklogin: function(data) {
-              if (typeof data === 'object' && data.ret === 403) {
-                window.location = '/login.html';
+              if (data.error) {
+                // window.location = '/login.html';
+                console.log('checklogin error: ' + data.error);
+                vm.step1 = 'login';
+                return false;
               }
+              return true;
             },
             // step1
+            stepLogin: function() {
+              vm.step1 = 'login';
+            },
             stepTaskList: function() {
               $.getJSON('/api/tasks', function(data, status) {
                 console.log('/api/tasks:')
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 vm.step1 = 'tasklist';
                 vm.$set(vm, 'tasks', data);
               });
@@ -352,11 +543,62 @@
               this.step1 = 'newtask';
               this.step = 'parseurl';
             },
-            stepChangePassword: function() {
-              this.step1 = 'changepassword'
+            stepMyMoney: function() {
+              // 从服务器获取账户余额
+              vm = this;
+              $.getJSON('/api/users/userinfo', function(data) {
+                if (data.error) {
+                  vm.stepLogin();
+                  return;
+                }
+                vm.user.isadmin = data.isadmin;
+                vm.user.money = data.money;
+                vm.step1 = 'mymoney';
+              });
             },
-            stepUserList: function() {},
-            stepNewUser: function() {},
+            stepChangePassword: function() {
+              this.step1 = 'changepassword';
+            },
+            stepLogout: function() {
+              this.step1 = 'login';
+              $.getJSON('/api/logout', function() {});
+            },
+            stepUserList: function() {
+              $.getJSON('/api/users', function(users) {
+                vm.step1 = 'userlist';
+                if (users.error) {
+                  console.log('获取用户列表失败：'+users.error);
+                  return;
+                }
+                vm.users = users;
+
+                $.getJSON('/api/usertasks', function(usertasks) {
+                  if (usertasks.error) {
+                    console.log('获取用户任务列表失败：'+usertasks.error);
+                    return;
+                  }
+                  vm.usertasks = usertasks;
+                });
+              });
+            },
+            stepNewUser: function() {
+              // TODO
+              vm.step1 = 'newuser';
+            },
+            stepRunnerList: function() {
+              $.getJSON('/api/runners', function(runners) {
+                if (runners.error) {
+                  console.log('获取执行器失败：'+runners.error);
+                  return;
+                }
+                vm.runners = runners;
+              });
+              vm.step1 = 'runnerlist';
+            },
+            stepRecordRechargeOrder: function() {
+              // 录入支付宝订单号
+              vm.step1 = 'recordrechargeorder';
+            },
 
             // step2
             next: function() {
@@ -370,7 +612,7 @@
               // var url = 'voteInfo2.json';
               $.getJSON(url, function(data, status) {
                 console.log('voteinfo='+JSON.stringify(data));
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 vm.$set(vm, 'voteinfo', data.info);
                 vm.$set(vm, 'key', data.key);
                 vm.step = 'selectvote';
@@ -421,10 +663,10 @@
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
                 console.log('/api/submititem:');
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 // console.log('/api/submittask: data=' + JSON.stringify(data) + ',status=' + status);
                 vm.$set(vm, 'task', {
-                  price: 0.07,
+                  price: 0.10,
                   votes: 1,
                   votespermin: 1,
                 });
@@ -442,9 +684,22 @@
                 +'&task='+encodeURIComponent(JSON.stringify(this.task));
               console.log('url: ' + url);
               $.getJSON(url, function(data, status) {
-                vm.checklogin(data);
+                if (!vm.checklogin(data)) return;
                 console.log('/api/submittask:');
                 vm.step = 'success';
+              });
+            },
+
+            // 提交充值的支付宝单号 recharge
+            recharge: function () {
+              $.getJSON('/api/users/recharge?order='+this.recharge.order, function(data) {
+                if (data.error) {
+                  alert(data.error);
+                  return;
+                }
+                console.log('充值结果:' + JSON.stringify(data));
+                alert('充值成功！');
+                vm.user.money = data.money;
               });
             },
 
@@ -454,14 +709,34 @@
                 alert('新密码两次输入不匹配');
                 return;
               }
-              $.getJSON('/api/users/changepassword?old='+encodeURIComponent(vm.oldpassword)+'&new='+encodeURIComponent(vm.newpassword), function() {
+              $.getJSON('/api/users/changepassword?old='+encodeURIComponent(vm.oldpassword)+'&new='+encodeURIComponent(vm.newpassword), function(res) {
+                if (!res.error) {
+                  alert(res.error);
+                  return;
+                }
                 alert('密码修改成功！');
               });
+            },
+
+            // 录入支付宝订单
+            recordrechargeorder: function() {
+              if (!this.recharge || !this.recharge.order || !this.recharge.money) {
+                alert('输入的订单号或金额非法');
+                return;
+              }
+              $.getJSON('/api/admin/recordrechargeorder?order='+encodeURIComponent(this.recharge.order)+'&money='+encodeURIComponent(this.recharge.money), function(res) {
+                if (res.error) {
+                  alert('录入订单失败：'+res.error);
+                  return;
+                }
+                alert('录入订单成功！');
+              })
             }
           }
         });
 
-        vm.stepTaskList();
+        // 默认打开的页面是“我的余额”
+        vm.stepMyMoney();
       });
     </script>
   </body>

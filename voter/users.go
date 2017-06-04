@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,10 +18,10 @@ var gUsers Users
 type Users []*User
 
 type User struct {
-	UserName string  `bson:"username"`
-	Password string  `bson:"password"`
-	IsAdmin  bool    `bson:"isadmin"`
-	Balance  float64 `bson:"balance"`
+	UserName string  `bson:"username" json:"username"`
+	Password string  `bson:"password" json:"passwrord"`
+	IsAdmin  bool    `bson:"isadmin" json:"isadmin"`
+	Balance  float64 `bson:"balance" json:"balance"`
 }
 
 // 第一步：如果带了正确的cookie，则成功，返回true，不返回结果
@@ -51,7 +52,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) *User {
 	u = check(username, password, timestamp)
 	if u == nil {
 		// log.Printf("check user error")
-		w.Write([]byte(`{"ret":403,"msg":"username or password is invalid"}`))
+		w.Write([]byte(`{"error":"username or password is invalid"}`))
 		return nil
 	}
 
@@ -181,5 +182,35 @@ func (users Users) GetUserByName(name string) *User {
 			return user
 		}
 	}
+	return nil
+}
+
+func (user *User) Recharge(order string) error {
+	// 先查询
+	recharges := []map[string]interface{}{}
+	err := MgoFind("weipiao", "recharge", bson.M{"order": order, "handled": false}, &recharges)
+	if err != nil {
+		return err
+	}
+
+	if len(recharges) < 1 {
+		return errors.New("没有找到订单号")
+	}
+	recharge := recharges[0]
+
+	// 再更新为已处理
+	// TODO 这里更新可以使用查出来的_id
+	err = MgoUpdate("weipiao", "recharge", bson.M{"order": order, "handled": false}, bson.M{"$set": bson.M{"handled": true}})
+	if err != nil {
+		return err
+	}
+
+	// 把订单额度加入账号
+	err = user.SetBalance(user.Balance + recharge["money"].(float64))
+	if err != nil {
+		log.Printf("充值单(%v)已处理，但用户(%v)余额设置失败：%v", order, user.UserName, err)
+		return err
+	}
+
 	return nil
 }
