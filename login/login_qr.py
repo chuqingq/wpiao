@@ -40,6 +40,8 @@ def get_qrcode(handle):
     # 获取二维码
     # wxlogin = uiautomation.PaneControl(searchDepth=2, ClassName='WeChatLoginWndForPC', Name=u'登录')
     wxlogin = uiautomation.ControlFromHandle(handle)
+    if not wxlogin:
+        return b''
     time.sleep(0.1)
     ret = uiautomation.Win32API.SetForegroundWindow(handle)
     log('ret: ' + str(ret))
@@ -81,5 +83,5 @@ if __name__ == '__main__':
     # 加载目前所有的handle
     prepare_qr()
     # 通过http使用时，每次不同的handle
-    httpd = HTTPServer(('',8080), MyHttpHandler)
+    httpd = HTTPServer(('',8090), MyHttpHandler)
     httpd.serve_forever()
