@@ -56,26 +56,26 @@ def get_qrcode(handle):
     f.close()
     return b
 
-from http.server import HTTPServer,BaseHTTPRequestHandler 
+# from http.server import HTTPServer,BaseHTTPRequestHandler 
 
-class MyHttpHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        global handles
-        global index
-        if self.path != '/qr':
-            self.wfile.write(b'Not Found')
-            return
-        print('path: ' + self.path + ', index: ' + str(index))
-        content = get_qrcode(handles[index])
-        self.send_response(200)
-        self.send_header("Content-Type", "image/png")
-        self.send_header("Content-Length", str(len(content)))
-        self.end_headers()
-        self.wfile.write(content)
-        # 处理index
-        index += 1
-        if index >= len(handles):
-            prepare_qr()
+# class MyHttpHandler(BaseHTTPRequestHandler):
+#     def do_GET(self):
+#         global handles
+#         global index
+#         if self.path != '/qr':
+#             self.wfile.write(b'Not Found')
+#             return
+#         print('path: ' + self.path + ', index: ' + str(index))
+#         content = get_qrcode(handles[index])
+#         self.send_response(200)
+#         self.send_header("Content-Type", "image/png")
+#         self.send_header("Content-Length", str(len(content)))
+#         self.end_headers()
+#         self.wfile.write(content)
+#         # 处理index
+#         index += 1
+#         if index >= len(handles):
+#             prepare_qr()
 
 # if __name__ == '__main__':
 #     # 加载目前所有的handle
