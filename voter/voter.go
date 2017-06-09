@@ -57,7 +57,7 @@ func (v *Voter) s() error {
 	}
 
 	v.values.Set("wxtoken", string(getByBound(resBody, []byte("window.wxtoken = \""), []byte("\";"))))
-	log.Printf("wxtoken: %v", v.values.Get("wxtoken"))
+	// log.Printf("wxtoken: %v", v.values.Get("wxtoken"))
 	if v.values.Get("wxtoken") == "" {
 		log.Printf("get wxtoken error. maybe voteUrl expired")
 		return errors.New("get wxtoken error. maybe voteUrl expired")
@@ -106,8 +106,8 @@ func (v *Voter) newappmsgvoteVote() error {
 	v.values.Set("action", "vote")
 	v.values.Set("f", "json")
 	v.values.Set("json", v.Info.Item)
-	log.Printf("vote values: %v", v.values)
-	log.Printf("newappmsgvoteVote formdata: %v", v.values.Encode())
+	// log.Printf("vote values: %v", v.values)
+	// log.Printf("newappmsgvoteVote formdata: %v", v.values.Encode())
 
 	res, err := v.client.PostForm("https://mp.weixin.qq.com/mp/newappmsgvote", v.values)
 	if err != nil {

@@ -167,7 +167,7 @@ func NewTask(shortOrLongUrl string) (*Task, error) {
 }
 
 func (vi *Task) NewVoter(voteUrl string) (*Voter, error) {
-	log.Printf("NewVoter():")
+	// log.Printf("NewVoter():")
 	voteUrl = strings.Replace(voteUrl, "https:", "http:", 1)
 
 	// 设置cookiejar
