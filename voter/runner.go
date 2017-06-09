@@ -123,14 +123,16 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 	}
 	log.Printf("该任务runner均结束")
 
-	// TODO 如果所有runner都结束了，判断是否要重新下发任务来补充差额
-	// finish := task.Votes <= task.CurVotes // 这种方式是不停的跑，知道票数OK
-	finish := true // 这种方式是只下发一次
-	if !finish {
+	// 如果所有runner都结束了，判断是否要重新下发任务来补充差额
+	log.Printf("len(gRunners)[%v]*r.AccountCount[%v] vs task.AlreadyVotes[%v]\n", len(gRunners), r.AccountCount, task.AlreadyVotes)
+	// if (task.Votes - task.CurVotes) >= (len(gRunners)*r.AccountCount - task.AlreadyVotes) {
+	if uint64(len(gRunners)*r.AccountCount) >= task.AlreadyVotes {
 		// 需要重新下发
+		log.Printf("reDispatchTask\n")
 		doDispatchTask(task)
 		return
 	}
+	log.Printf("finish\n")
 
 	time.Sleep(5 * time.Second)
 
