@@ -106,7 +106,7 @@ func TasksHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tasks := tasksToArray(voteInfos)
-	log.Printf("tasks: %+v", tasks)
+	// log.Printf("tasks: %+v", tasks)
 
 	tasksBytes, err := json.Marshal(tasks)
 	if err != nil {

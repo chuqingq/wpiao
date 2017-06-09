@@ -133,26 +133,26 @@ func (v *Voter) newappmsgvoteVote() error {
 
 	retStr := resData["base_resp"].(map[string]interface{})["ret"].(json.Number).String()
 	if retStr == "0" {
+		log.Printf("vote success 投票成功\n")
 		return nil
 	}
 
 	if retStr == "-6" {
-		log.Printf("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
-		return errors.New("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
+		// log.Printf("newappmsgvoteVote vote error: 投票过于频繁，请稍后重试！")
+		return errors.New("vote error: 投票过于频繁，请稍后重试！")
 	}
 
 	// 后面的错误可能都是任务本身的问题，例如需要关注、已过期，都把状态设置为fail，不再尝试
 	v.Info.SetStatus("fail")
 
 	if retStr == "-7" {
-		log.Printf("newappmsgvoteVote vote error: 关注公众号后才可以投票")
-		return errors.New("newappmsgvoteVote vote error: 关注公众号后才可以投票")
+		// log.Printf("newappmsgvoteVote vote error: 关注公众号后才可以投票")
+		return errors.New("vote error: 关注公众号后才可以投票")
 	}
 
 	// 其他失败
-	log.Printf("newappmsgvoteVote vote error: 投票失败: " + retStr)
-	return errors.New("newappmsgvoteVote vote error: 投票失败: " + retStr)
-
+	// log.Printf("newappmsgvoteVote vote error: 投票失败: " + retStr)
+	return errors.New("vote error: 投票失败: " + retStr)
 }
 
 func getByBound(b, left, right []byte) []byte {
