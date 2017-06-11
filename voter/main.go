@@ -133,7 +133,7 @@ func ParseUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Printf("voteUrl: %v", voteUrl)
+	// log.Printf("voteUrl: %v", voteUrl)
 
 	// 根据短url来获取投票信息
 	task, err := NewTask(voteUrl)
@@ -203,12 +203,12 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Printf("info: %v", string(infoStr[:60]))
+	// log.Printf("info: %v", string(infoStr[:60]))
 
 	// 取出key
 	// key := info["key"].(string)
 	key := r.FormValue("key")
-	log.Printf("key: %v", key)
+	// log.Printf("key: %v", key)
 	delete(info, "key")
 
 	// item
@@ -371,7 +371,8 @@ func RunnerVote(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Printf("voteUrl: %v", voteUrl)
+	log.Printf("runner: %v", r.RemoteAddr)
+	// log.Printf("voteUrl: %v", voteUrl)
 
 	key := GetKeyFromUrl(voteUrl)
 	if key == "" {

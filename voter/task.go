@@ -114,7 +114,7 @@ func NewTask(shortOrLongUrl string) (*Task, error) {
 	}
 
 	vi.Supervoteid = string(getByBound(resBody, []byte(`supervoteid=`), []byte(`&`)))
-	log.Printf("supervoteid: %v", vi.Supervoteid)
+	// log.Printf("supervoteid: %v", vi.Supervoteid)
 	if vi.Supervoteid == "" {
 		log.Printf("supervoteid is empty. maybe url is invalid")
 		return nil, errors.New("supervoteid is empty. maybe url is invalid")
@@ -134,7 +134,7 @@ func NewTask(shortOrLongUrl string) (*Task, error) {
 	values.Set("supervoteid", vi.Supervoteid)
 	values.Set("action", "show")
 	showUrl := getNewappmsgvoteShowUrl(values)
-	log.Printf("showUrl: %v", showUrl)
+	// log.Printf("showUrl: %v", showUrl)
 	resp, err = client.Get(showUrl)
 	if err != nil {
 		log.Printf("getNewappmsgvoteShowUrl error: %v", err)
@@ -150,11 +150,11 @@ func NewTask(shortOrLongUrl string) (*Task, error) {
 
 	// voteInfoStr := string(getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`)))
 	voteInfoBytes := getByBound(resBody, []byte(`var voteInfo=`), []byte(`;`))
-	log.Printf("voteInfoStr: %v ...", string(voteInfoBytes[:60]))
+	// log.Printf("voteInfoStr: %v ...", string(voteInfoBytes[:60]))
 	vi.Info = make(map[string]interface{})
 	// err = json.Unmarshal([]byte(voteInfoStr), &vi.Info)
 	err = jsonUnmarshal(voteInfoBytes, &vi.Info)
-	// log.Printf("info: %v", vi.Info)
+	log.Printf("task title: %v", vi.Info["title"])
 	if err != nil {
 		log.Printf("json.Unmarshal voteInfo error: %v", err)
 		return nil, err
@@ -240,7 +240,7 @@ func QueryTasksByUser(username string) ([]*Task, error) {
 }
 
 func QueryTaskById(taskId string) (*Task, error) {
-	log.Printf("QueryTaskById(): %v", taskId)
+	// log.Printf("QueryTaskById(): %v", taskId)
 	var tasks []*Task
 	err := MgoFind("weipiao", "task", bson.M{"_id": bson.ObjectIdHex(taskId)}, &tasks)
 	if err != nil {
@@ -291,7 +291,7 @@ func QueryTaskBySuperVoteId(supervoteid string) (*Task, error) {
 }
 
 func (vi *Task) IncrVotes() error {
-	log.Printf("vi.IncrVotes")
+	// log.Printf("vi.IncrVotes")
 	err := MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$inc": bson.M{"curvotes": 1}})
 	if err != nil {
 		log.Printf("mgoupdate incr curvotes error: %v", err)
@@ -311,13 +311,13 @@ func (vi *Task) IncrVotes() error {
 	}
 
 	vi.Status = "success"
-	log.Printf("task status: success, %v", vi.Id)
+	// log.Printf("task status: success, %v", vi.Id)
 	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }
 
 func (vi *Task) DecrVotes() error {
-	log.Printf("vi.DecrVotes")
+	// log.Printf("vi.DecrVotes")
 	err := MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$inc": bson.M{"curvotes": -1}})
 	if err != nil {
 		log.Printf("mgoupdate decr curvotes error: %v", err)
@@ -331,7 +331,7 @@ func (vi *Task) DecrVotes() error {
 	}
 
 	vi.Status = "doing"
-	log.Printf("task status: doing, %v", vi.Id)
+	// log.Printf("task status: doing, %v", vi.Id)
 	return MgoUpdate("weipiao", "task", bson.M{"_id": vi.Id}, bson.M{"$set": bson.M{"status": vi.Status}})
 	// return MgoUpdate("weipiao", "task", bson.M{"key": vi.Key}, bson.M{"$set": bson.M{"curvotes": vi.CurVotes, "status": vi.Status}})
 }
@@ -363,7 +363,7 @@ func (task *Task) DecrRunnerCount() error {
 		log.Printf("DecrRunnerCount change error: %v", err)
 		return err
 	}
-	log.Printf("new runnercount: %v", task.RunnerCount)
+	// log.Printf("still runnercount: %v", task.RunnerCount)
 	// err := MgoUpdate("weipiao", "task", bson.M{"_id": bson.ObjectId(task.Id)}, bson.M{"$inc": bson.M{"runnercount": -1}})
 	// if err != nil {
 	// 	log.Printf("DecrRunnerCount error: %v", err)

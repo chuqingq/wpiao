@@ -103,7 +103,7 @@ func doDispatchTask(task *Task) {
 		}
 		// 经过验证，这种算法基本平均
 		r.DispatchTask(task, count)
-		log.Printf("doDispatchTask: runner: %v, task: %v, count: %v", r.Name, task.Id, count)
+		log.Printf("doDispatchTask: runner: %v(%v), task: %v, count: %v", r.Name, r.Addr, task.Id, count)
 		index++
 	}
 }
@@ -118,15 +118,15 @@ func (r *Runner) NotifyTaskFinish(task *Task) {
 	}
 	// 如果还有别的runner未结束，则继续等待，不做动作
 	if task.RunnerCount > 0 {
-		log.Printf("该任务还有runner在运行，等待。。。")
+		log.Printf("该任务还有%v个runner在运行，等待。。。", task.RunnerCount)
 		return
 	}
 	log.Printf("该任务runner均结束")
 
 	// 如果所有runner都结束了，判断是否要重新下发任务来补充差额
-	log.Printf("len(gRunners)[%v]*r.AccountCount[%v] vs task.AlreadyVotes[%v]\n", len(gRunners), r.AccountCount, task.AlreadyVotes)
+	log.Printf("task.CurVotes[%v] < task.Votes[%v] && len(gRunners)[%v]*r.AccountCount[%v] >= task.AlreadyVotes[%v]\n", task.CurVotes, task.Votes, len(gRunners), r.AccountCount, task.AlreadyVotes)
 	// if (task.Votes - task.CurVotes) >= (len(gRunners)*r.AccountCount - task.AlreadyVotes) {
-	if uint64(len(gRunners)*r.AccountCount) >= task.AlreadyVotes {
+	if task.CurVotes < task.Votes && uint64(len(gRunners)*r.AccountCount) >= task.AlreadyVotes {
 		// 需要重新下发
 		log.Printf("reDispatchTask\n")
 		doDispatchTask(task)

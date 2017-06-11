@@ -28,7 +28,7 @@ func (v *Voter) Vote() error {
 
 	err = v.newappmsgvoteShow()
 	if err != nil {
-		log.Printf("newappmsgvoteShow error: %v", err)
+		// log.Printf("newappmsgvoteShow error: %v", err)
 		return err
 	}
 
@@ -73,7 +73,7 @@ func (v *Voter) newappmsgvoteShow() error {
 	// 补齐参数
 	v.values.Set("supervoteid", fmt.Sprintf("%v", supervoteid))
 	v.values.Set("action", "show")
-	log.Printf("newappmsgvoteShow values: %+v", v.values)
+	// log.Printf("newappmsgvoteShow values: %+v", v.values)
 
 	url := getNewappmsgvoteShowUrl(v.values)
 	res, err := v.client.Get(url)
@@ -86,12 +86,12 @@ func (v *Voter) newappmsgvoteShow() error {
 	// 判断这个URL是否已经投过票。如果已投过，再投也会成功，因此需要在这里提前判断
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("newappmsgvoteShow read body error: %v", err)
+		// log.Printf("newappmsgvoteShow read body error: %v", err)
 		return err
 	}
 	// log.Printf("newappmsgvoteShow resBody: %v", string(resBody))
 	if bytes.Contains(resBody, []byte(`"selected":true`)) {
-		log.Printf("newappmsgvoteShow error: 您已投票")
+		// log.Printf("newappmsgvoteShow error: 您已投票")
 		return errors.New("newappmsgvoteShow error: 您已投票")
 	}
 
