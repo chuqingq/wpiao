@@ -185,7 +185,7 @@
                             <input type="checkbox" v-bind:name="subject.vote_id" v-bind:value="index" v-model="option.selected" v-if="subject.type==2&&!isExpired">
                             <input type="checkbox" v-bind:name="subject.vote_id" v-bind:value="index" disabled="disabled"  v-model="option.selected" v-if="subject.type==2&&isExpired">
                           </td>
-                          <td>{{index}}</td>
+                          <td>{{index+1}}</td>
                           <td>{{option.name}}</td>
                           <td>{{option.cnt}}</td>
                         </tr>
