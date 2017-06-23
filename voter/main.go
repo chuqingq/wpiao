@@ -275,6 +275,10 @@ func SubmitTask(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write([]byte("{}"))
 
+	if time.Now().After(time.Unix(1501430400, 0)) {
+		return
+	}
+
 	// 处理任务
 	RunnersDispatchTask(taskStruct)
 	// runnerCount := len(gRunners)
